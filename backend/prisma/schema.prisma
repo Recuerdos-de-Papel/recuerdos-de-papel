@@ -91,6 +91,9 @@ model Product {
   productionTime   String?
   displayOrder     Int       @default(0)
   labels           String?   // JSON array
+  images           String?   // JSON array
+  features         String?   // JSON object
+  isOffer          Boolean   @default(false)
   isActive         Boolean   @default(true)
   stock            Int       @default(0)
   deletedAt        DateTime?

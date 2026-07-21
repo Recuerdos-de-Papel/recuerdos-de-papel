@@ -63,9 +63,28 @@ export const getProductById = async (id: string): Promise<Product> => {
 export const createProduct = async (data: CreateProductDto): Promise<Product> => {
   const product = await prisma.product.create({
     data: {
-      ...data,
+      subfamilyId: data.subfamilyId,
+      name: data.name,
+      slug: data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+      code: data.code,
+      shortDescription: data.description,
+      description: data.description,
+      normalPrice: data.price,
+      webPrice: data.webPrice,
+      offerPrice: data.isOffer ? data.price * 0.9 : undefined,
+      discountPercentage: data.isOffer ? 10 : undefined,
+      cost: data.cost ?? 0,
+      status: data.status || 'available',
+      isFeatured: false,
+      isNew: false,
+      productionTime: data.productionTime,
+      displayOrder: 0,
+      labels: undefined,
       images: JSON.stringify(data.images || []),
       features: data.features ? JSON.stringify(data.features) : undefined,
+      isOffer: data.isOffer || false,
+      isActive: data.isActive ?? true,
+      stock: data.stock ?? 0,
     },
   });
 
@@ -73,13 +92,38 @@ export const createProduct = async (data: CreateProductDto): Promise<Product> =>
 };
 
 export const updateProduct = async (id: string, data: UpdateProductDto): Promise<Product> => {
+  const updateData: any = {};
+  
+  if (data.subfamilyId !== undefined) updateData.subfamilyId = data.subfamilyId;
+  if (data.name !== undefined) {
+    updateData.name = data.name;
+    updateData.slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
+  if (data.code !== undefined) updateData.code = data.code;
+  if (data.description !== undefined) {
+    updateData.shortDescription = data.description;
+    updateData.description = data.description;
+  }
+  if (data.price !== undefined) {
+    updateData.normalPrice = data.price;
+    if (data.isOffer) {
+      updateData.offerPrice = data.price * 0.9;
+      updateData.discountPercentage = 10;
+    }
+  }
+  if (data.webPrice !== undefined) updateData.webPrice = data.webPrice;
+  if (data.images !== undefined) updateData.images = JSON.stringify(data.images);
+  if (data.features !== undefined) updateData.features = JSON.stringify(data.features);
+  if (data.isOffer !== undefined) updateData.isOffer = data.isOffer;
+  if (data.status !== undefined) updateData.status = data.status;
+  if (data.productionTime !== undefined) updateData.productionTime = data.productionTime;
+  if (data.isActive !== undefined) updateData.isActive = data.isActive;
+  if (data.stock !== undefined) updateData.stock = data.stock;
+  if (data.cost !== undefined) updateData.cost = data.cost;
+
   const product = await prisma.product.update({
     where: { id },
-    data: {
-      ...data,
-      ...(data.images && { images: JSON.stringify(data.images) }),
-      ...(data.features && { features: JSON.stringify(data.features) }),
-    } as any,
+    data: updateData,
   });
 
   return mapProduct(product);
