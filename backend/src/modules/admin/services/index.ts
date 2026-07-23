@@ -40,17 +40,12 @@ const createPrismaClient = () => {
   const databaseUrl = process.env.DATABASE_URL || '';
   const directUrl = process.env.DIRECT_URL || '';
 
-  // Use direct connection for queries (bypass PgBouncer) to avoid prepared statement issues
+  // Prefer DIRECT_URL to bypass PgBouncer completely
   const runtimeUrl = directUrl || databaseUrl;
-
-  // Add pgbouncer=true to URL if not present
-  const finalUrl = runtimeUrl.includes('pgbouncer=true') 
-    ? runtimeUrl 
-    : `${runtimeUrl}${runtimeUrl.includes('?') ? '&' : '?'}pgbouncer=true`;
 
   return new PrismaClient({
     datasources: {
-      db: { url: finalUrl },
+      db: { url: runtimeUrl },
     },
     // Enable PgBouncer compatibility mode
     log: ['query', 'error', 'warn'],
