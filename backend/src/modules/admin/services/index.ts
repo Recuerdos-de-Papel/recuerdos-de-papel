@@ -38,16 +38,14 @@ const globalForPrisma = globalThis as unknown as {
 
 const createPrismaClient = () => {
   const databaseUrl = process.env.DATABASE_URL || '';
-  const directUrl = process.env.DIRECT_URL || databaseUrl;
+  const directUrl = process.env.DIRECT_URL || '';
 
-  // For pooler URL, add pgbouncer=true and connection_limit=1
-  const poolerUrl = databaseUrl.includes('pooler.supabase')
-    ? databaseUrl + (databaseUrl.includes('?') ? '&' : '?') + 'pgbouncer=true&connection_limit=1'
-    : databaseUrl;
+  // Use direct connection for queries (bypass PgBouncer) to avoid prepared statement issues
+  const runtimeUrl = directUrl || databaseUrl;
 
   return new PrismaClient({
     datasources: {
-      db: { url: poolerUrl },
+      db: { url: runtimeUrl },
     },
   });
 };
