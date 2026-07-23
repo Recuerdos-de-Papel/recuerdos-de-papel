@@ -8,8 +8,9 @@ export const errorHandler = (
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   next: NextFunction
 ) => {
-  console.error(err);
+  console.error('ERROR DETALLADO:', err);
   res.status(500).json({
-    error: env.NODE_ENV === 'production' ? 'Error interno del servidor' : err.message,
+    error: err.message,
+    stack: env.NODE_ENV === 'production' ? undefined : err.stack,
   });
 };
