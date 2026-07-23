@@ -1,10 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { env } from '../config/env';
-
-const prisma = new PrismaClient();
+import { prisma } from '../modules/admin/services';
 
 // POST /api/auth/login - Login de cliente
 export const loginController = async (req: Request, res: Response, next: NextFunction) => {
