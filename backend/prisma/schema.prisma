@@ -104,6 +104,12 @@ model Product {
   orderItems OrderItem[]
   favorites  Favorite[]
 
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@index([subfamilyId])
+  @@index([isActive])
+  @@index([status])
+  @@index([deletedAt, isActive])
   @@map("products")
 }
 
@@ -198,6 +204,9 @@ model Order {
   user  User        @relation(fields: [userId], references: [id], onDelete: Restrict)
   items OrderItem[]
 
+  @@index([status])
+  @@index([createdAt])
+  @@index([userId])
   @@map("orders")
 }
 
@@ -212,6 +221,8 @@ model OrderItem {
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
 
+  @@index([orderId])
+  @@index([productId])
   @@map("order_items")
 }
 

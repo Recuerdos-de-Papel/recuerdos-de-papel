@@ -31,21 +31,109 @@ import {
   UpdateSettingDto,
 } from '../dto';
 
-const prisma = new PrismaClient();
+// Singleton PrismaClient
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+const prisma = globalForPrisma.prisma ?? new PrismaClient();
+globalForPrisma.prisma = prisma;
 
 // Helper to map product from Prisma
 const mapProduct = (p: any): Product => ({
-  ...p,
-  images: p.images,
+  id: p.id,
+  subfamilyId: p.subfamilyId,
+  name: p.name,
+  code: p.code,
+  description: p.shortDescription || p.description,
+  price: p.normalPrice,
+  webPrice: p.webPrice,
+  images: p.images ? JSON.parse(p.images) : [],
+  isOffer: p.isOffer,
+  status: p.status,
   features: p.features ? JSON.parse(p.features) : undefined,
+  productionTime: p.productionTime,
+  isActive: p.isActive,
+  stock: p.stock,
+  cost: p.cost,
+  createdAt: p.createdAt,
+  updatedAt: p.updatedAt,
+  subfamily: p.subfamily ? {
+    id: p.subfamily.id,
+    name: p.subfamily.name,
+    family: p.subfamily.family ? {
+      id: p.subfamily.family.id,
+      name: p.subfamily.family.name,
+      category: p.subfamily.family.category ? {
+        id: p.subfamily.family.category.id,
+        name: p.subfamily.family.category.name,
+      } : undefined,
+    } : undefined,
+  } : undefined,
 });
 
 // Product services
-export const getProducts = async (): Promise<Product[]> => {
-  const products = await prisma.product.findMany({
-    orderBy: { createdAt: 'desc' },
-  });
-  return products.map(mapProduct);
+export interface GetProductsQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  isActive?: boolean;
+  status?: string;
+  subfamilyId?: string;
+}
+
+export const getProducts = async (query?: GetProductsQuery): Promise<{ products: Product[]; total: number }> => {
+  const page = Math.max(1, query?.page || 1);
+  const limit = Math.min(100, Math.max(1, query?.limit || 20));
+  const skip = (page - 1) * limit;
+
+  const where: any = {
+    deletedAt: null,
+  };
+
+  if (query?.search) {
+    where.OR = [
+      { name: { contains: query.search, mode: 'insensitive' } },
+      { code: { contains: query.search, mode: 'insensitive' } },
+    ];
+  }
+
+  if (query?.isActive !== undefined) {
+    where.isActive = query.isActive;
+  }
+
+  if (query?.status) {
+    where.status = query.status;
+  }
+
+  if (query?.subfamilyId) {
+    where.subfamilyId = query.subfamilyId;
+  }
+
+  const [products, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+      include: {
+        subfamily: {
+          include: {
+            family: {
+              include: {
+                category: true,
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.product.count({ where }),
+  ]);
+
+  return {
+    products: products.map(mapProduct),
+    total,
+  };
 };
 
 export const getProductById = async (id: string): Promise<Product> => {
@@ -130,8 +218,9 @@ export const updateProduct = async (id: string, data: UpdateProductDto): Promise
 };
 
 export const deleteProduct = async (id: string): Promise<void> => {
-  await prisma.product.delete({
+  await prisma.product.update({
     where: { id },
+    data: { deletedAt: new Date() },
   });
 };
 

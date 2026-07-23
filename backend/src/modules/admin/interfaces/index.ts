@@ -7,7 +7,7 @@ export interface Product {
   description: string | null;
   price: number;
   webPrice: number;
-  images: string;
+  images: string[];
   isOffer: boolean;
   status: 'available' | 'in_production' | 'out_of_stock';
   features?: ProductFeatures;
@@ -17,6 +17,18 @@ export interface Product {
   cost: number | null;
   createdAt: Date;
   updatedAt: Date;
+  subfamily?: {
+    id: string;
+    name: string;
+    family?: {
+      id: string;
+      name: string;
+      category?: {
+        id: string;
+        name: string;
+      };
+    };
+  };
 }
 
 export interface ProductFeatures {

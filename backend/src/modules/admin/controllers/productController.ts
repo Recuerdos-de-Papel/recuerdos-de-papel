@@ -19,8 +19,22 @@ import { createAdminLog } from '../services';
 // GET /api/admin/products - Obtener todos los productos
 export const getProductsController = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const products = await getProducts();
-    res.json(products);
+    const { page, limit, search, isActive, status, subfamilyId } = req.query;
+    const result = await getProducts({
+      page: page ? parseInt(page as string, 10) : undefined,
+      limit: limit ? parseInt(limit as string, 10) : undefined,
+      search: search as string | undefined,
+      isActive: isActive !== undefined ? isActive === 'true' : undefined,
+      status: status as string | undefined,
+      subfamilyId: subfamilyId as string | undefined,
+    });
+    res.json({
+      products: result.products,
+      total: result.total,
+      page: parseInt(page as string, 10) || 1,
+      limit: parseInt(limit as string, 10) || 20,
+      totalPages: Math.ceil(result.total / (parseInt(limit as string, 10) || 20)),
+    });
   } catch (error) {
     next(error);
   }

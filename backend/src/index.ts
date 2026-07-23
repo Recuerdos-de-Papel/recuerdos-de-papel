@@ -22,13 +22,20 @@ dotenv.config();
 
 const app = express();
 
-// Rate Limiting
+// Rate Limiting - General
 const limiter = rateLimit({
-  windowMs: env.RATE_LIMIT_WINDOW_MS,
-  max: env.RATE_LIMIT_MAX_REQUESTS,
+  windowMs: 60 * 1000, // 1 minuto
+  max: 60, // 60 requests por minuto
   message: { error: 'Demasiadas solicitudes, intente más tarde' },
 });
 app.use(limiter);
+
+// Admin API rate limit - más permisivo
+const adminLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minuto
+  max: 120, // 120 requests por minuto
+  message: { error: 'Demasiadas solicitudes, intente más tarde' },
+});
 
 // Middleware
 app.use(helmet());
@@ -237,7 +244,7 @@ app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payments', MercadoPagoRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/admin', adminLimiter, adminRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
