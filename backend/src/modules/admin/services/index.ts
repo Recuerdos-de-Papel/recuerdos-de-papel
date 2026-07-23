@@ -521,7 +521,10 @@ export const getSalesStats = async (from?: Date, to?: Date): Promise<SalesStats>
     },
   });
 
-  const totalSales = orders.reduce((sum, order) => sum + order.total, 0);
+  const totalSales = orders.reduce(
+    (sum: number, order: any) => sum + order.total,
+    0
+  );
   const totalOrders = orders.length;
   const averageTicket = totalOrders > 0 ? totalSales / totalOrders : 0;
 
@@ -561,7 +564,7 @@ export const getTopProducts = async (from?: Date, to?: Date, limit: number = 10)
 
   const products = await prisma.product.findMany({
     where: {
-      id: { in: items.map(i => i.productId) },
+      id: { in: items.map((i: any) => i.productId) },
     },
     select: {
       id: true,
@@ -569,8 +572,8 @@ export const getTopProducts = async (from?: Date, to?: Date, limit: number = 10)
     },
   });
 
-  return items.map(item => {
-    const product = products.find(p => p.id === item.productId);
+  return items.map((item: any) => {
+    const product = products.find((p: any) => p.id === item.productId);
     return {
       productId: item.productId,
       productName: product?.name || 'Producto eliminado',
@@ -613,7 +616,7 @@ export const getTopCategories = async (from?: Date, to?: Date, limit: number = 1
 
   const categoryMap = new Map<string, { id: string; name: string; quantity: number; revenue: number }>();
 
-  items.forEach(item => {
+  items.forEach((item: any) => {
     const category = item.product.subfamily?.family?.category;
     if (category) {
       const existing = categoryMap.get(category.id) || {
