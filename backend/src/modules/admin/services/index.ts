@@ -36,19 +36,60 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+/**
+ * Transforms a Supabase pooler URL to a direct connection URL.
+ * Pooler format: postgresql://postgres.PROJECT_REF:PASS@aws-0-REGION.pooler.supabase.com:6543/DB
+ * Direct format: postgresql://postgres:PASS@db.PROJECT_REF.supabase.co:5432/DB
+ */
+const poolerToDirectUrl = (poolerUrl: string): string | null => {
+  try {
+    // Only transform if it's a Supabase pooler URL
+    if (!poolerUrl.includes('.pooler.supabase.com') || !poolerUrl.includes('@')) {
+      return null;
+    }
+
+    // Extract components
+    const match = poolerUrl.match(/^postgresql:\/\/(?:[^:]+):([^@]+)@([^.]+)\.pooler\.supabase\.com:(\d+)\/(.+)$/);
+    if (!match) return null;
+
+    const password = match[1];
+    const projectRef = match[2]; // e.g., kdktpojkuztruiyqlqlr
+    const database = match[4].split('?')[0]; // Remove query params
+
+    // Build direct URL
+    const directUrl = `postgresql://postgres:${password}@db.${projectRef}.supabase.co:5432/${database}`;
+    return directUrl;
+  } catch {
+    return null;
+  }
+};
+
 const createPrismaClient = () => {
   const databaseUrl = process.env.DATABASE_URL || '';
-  const directUrl = process.env.DIRECT_URL || '';
+  let directUrl = process.env.DIRECT_URL || '';
+
+  // Auto-generate DIRECT_URL from DATABASE_URL if not provided
+  if (!directUrl) {
+    const generated = poolerToDirectUrl(databaseUrl);
+    if (generated) {
+      console.log('Auto-generated DIRECT_URL from DATABASE_URL');
+      directUrl = generated;
+    }
+  }
 
   // Prefer DIRECT_URL to bypass PgBouncer completely
-  const runtimeUrl = directUrl || databaseUrl;
+  let runtimeUrl = directUrl || databaseUrl;
+
+  // If still using DATABASE_URL (no direct URL available), add pgbouncer=true
+  if (!directUrl && databaseUrl && !runtimeUrl.includes('pgbouncer=')) {
+    runtimeUrl += (runtimeUrl.includes('?') ? '&' : '?') + 'pgbouncer=true';
+  }
 
   return new PrismaClient({
     datasources: {
       db: { url: runtimeUrl },
     },
-    // Enable PgBouncer compatibility mode
-    log: ['query', 'error', 'warn'],
+    log: ['error', 'warn'],
   });
 };
 
