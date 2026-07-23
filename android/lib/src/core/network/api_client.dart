@@ -12,7 +12,7 @@ import 'package:recuerdos_de_papel_admin/src/features/settings/settings_service.
 import 'package:recuerdos_de_papel_admin/src/features/statistics/statistics_service.dart';
 
 class ApiClient {
-  static const String baseUrl = 'http://localhost:3000/api/admin';
+  static const String baseUrl = 'https://recuerdos-de-papel-backend.onrender.com/api/admin';
   static final Dio _dio = Dio();
   
   static final ApiClient _instance = ApiClient._internal();

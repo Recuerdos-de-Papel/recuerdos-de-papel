@@ -1,4 +1,4 @@
--- CreateTable for users
+-- CreateTable
 CREATE TABLE "users" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "email" TEXT NOT NULL,
@@ -12,7 +12,7 @@ CREATE TABLE "users" (
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable for categories
+-- CreateTable
 CREATE TABLE "categories" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "name" TEXT NOT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE "categories" (
     CONSTRAINT "categories_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable for families
+-- CreateTable
 CREATE TABLE "families" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "categoryId" UUID NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE "families" (
     CONSTRAINT "families_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable for subfamilies
+-- CreateTable
 CREATE TABLE "subfamilies" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "familyId" UUID NOT NULL,
@@ -53,7 +53,7 @@ CREATE TABLE "subfamilies" (
     CONSTRAINT "subfamilies_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable for products
+-- CreateTable
 CREATE TABLE "products" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "subfamilyId" UUID NOT NULL,
@@ -73,6 +73,9 @@ CREATE TABLE "products" (
     "productionTime" TEXT,
     "displayOrder" INTEGER NOT NULL DEFAULT 0,
     "labels" TEXT,
+    "images" TEXT,
+    "features" TEXT,
+    "isOffer" BOOLEAN NOT NULL DEFAULT false,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "stock" INTEGER NOT NULL DEFAULT 0,
     "deletedAt" TIMESTAMP(3),
@@ -82,7 +85,7 @@ CREATE TABLE "products" (
     CONSTRAINT "products_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable for addresses
+-- CreateTable
 CREATE TABLE "addresses" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "userId" UUID NOT NULL,
@@ -103,7 +106,7 @@ CREATE TABLE "addresses" (
     CONSTRAINT "addresses_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable for favorites
+-- CreateTable
 CREATE TABLE "favorites" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "userId" UUID NOT NULL,
@@ -113,7 +116,7 @@ CREATE TABLE "favorites" (
     CONSTRAINT "favorites_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable for promotions
+-- CreateTable
 CREATE TABLE "promotions" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "title" TEXT NOT NULL,
@@ -130,7 +133,7 @@ CREATE TABLE "promotions" (
     CONSTRAINT "promotions_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable for flyers
+-- CreateTable
 CREATE TABLE "flyers" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "title" TEXT NOT NULL,
@@ -145,7 +148,7 @@ CREATE TABLE "flyers" (
     CONSTRAINT "flyers_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable for orders
+-- CreateTable
 CREATE TABLE "orders" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "userId" UUID NOT NULL,
@@ -162,6 +165,7 @@ CREATE TABLE "orders" (
     "notes" TEXT,
     "paymentId" TEXT,
     "paymentStatus" TEXT,
+    "paymentMethod" TEXT,
     "merchantOrderId" TEXT,
     "dateApproved" TIMESTAMP(3),
     "confirmedAt" TIMESTAMP(3),
@@ -172,7 +176,7 @@ CREATE TABLE "orders" (
     CONSTRAINT "orders_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable for order_items
+-- CreateTable
 CREATE TABLE "order_items" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "orderId" UUID NOT NULL,
@@ -184,7 +188,7 @@ CREATE TABLE "order_items" (
     CONSTRAINT "order_items_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable for settings
+-- CreateTable
 CREATE TABLE "settings" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "key" TEXT NOT NULL,
@@ -196,7 +200,7 @@ CREATE TABLE "settings" (
     CONSTRAINT "settings_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable for admin_logs
+-- CreateTable
 CREATE TABLE "admin_logs" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "adminId" UUID NOT NULL,
@@ -213,26 +217,39 @@ CREATE TABLE "admin_logs" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "products_slug_key" ON "products"("slug");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "settings_key_key" ON "settings"("key");
 
 -- AddForeignKey
 ALTER TABLE "families" ADD CONSTRAINT "families_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "categories"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "subfamilies" ADD CONSTRAINT "subfamilies_familyId_fkey" FOREIGN KEY ("familyId") REFERENCES "families"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "products" ADD CONSTRAINT "products_subfamilyId_fkey" FOREIGN KEY ("subfamilyId") REFERENCES "subfamilies"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "addresses" ADD CONSTRAINT "addresses_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "favorites" ADD CONSTRAINT "favorites_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "favorites" ADD CONSTRAINT "favorites_productId_fkey" FOREIGN KEY ("productId") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "orders" ADD CONSTRAINT "orders_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "orders"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_productId_fkey" FOREIGN KEY ("productId") REFERENCES "products"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
+-- AddForeignKey
 ALTER TABLE "admin_logs" ADD CONSTRAINT "admin_logs_adminId_fkey" FOREIGN KEY ("adminId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
