@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../modules/admin/services';
 
 export const getPromotions = async () => {
   return prisma.promotion.findMany({

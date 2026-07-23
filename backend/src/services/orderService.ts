@@ -1,4 +1,3 @@
-import { PrismaClient } from '@prisma/client';
 import {
   Order,
   CreateOrderDto,
@@ -8,8 +7,7 @@ import {
   OrderNotFoundError,
   OrderCannotCancelError,
 } from '../types/order';
-
-const prisma = new PrismaClient();
+import { prisma } from '../modules/admin/services';
 
 const mapPrismaOrderToOrder = (prismaOrder: any): Order => ({
   id: prismaOrder.id,
