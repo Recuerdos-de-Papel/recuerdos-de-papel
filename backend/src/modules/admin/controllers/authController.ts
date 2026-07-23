@@ -1,12 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { env } from '../../../config/env';
 import { adminLoginSchema } from '../validators';
-import { createAdminLog } from '../services';
-
-const prisma = new PrismaClient();
+import { createAdminLog, prisma } from '../services';
 
 // POST /api/admin/auth/login - Login de administrador
 export const loginController = async (req: Request, res: Response, next: NextFunction) => {

@@ -53,6 +53,9 @@ const createPrismaClient = () => {
 const prisma = globalForPrisma.prisma ?? createPrismaClient();
 globalForPrisma.prisma = prisma;
 
+// Export prisma for reuse across modules
+export { prisma };
+
 // Helper to map product from Prisma
 const mapProduct = (p: any): Product => ({
   id: p.id,
