@@ -255,8 +255,7 @@ export class MercadoPagoService {
   }
 
   private static async findOrderByPaymentId(paymentId: string): Promise<any[]> {
-    const { PrismaClient } = await import('@prisma/client');
-    const prisma = new PrismaClient();
+    const { prisma } = await import('../../../modules/admin/services');
 
     return prisma.order.findMany({
       where: {
