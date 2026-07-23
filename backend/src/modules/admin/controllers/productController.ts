@@ -36,6 +36,7 @@ export const getProductsController = async (req: Request, res: Response, next: N
       totalPages: Math.ceil(result.total / (parseInt(limit as string, 10) || 20)),
     });
   } catch (error) {
+    console.error('Error en getProductsController:', error);
     next(error);
   }
 };
