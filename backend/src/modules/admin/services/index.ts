@@ -48,18 +48,21 @@ const poolerToDirectUrl = (poolerUrl: string): string | null => {
       return null;
     }
 
-    // Extract components
-    const match = poolerUrl.match(/^postgresql:\/\/(?:[^:]+):([^@]+)@([^.]+)\.pooler\.supabase\.com:(\d+)\/(.+)$/);
+    // Extract components from pooler URL
+    // Format: postgresql://postgres.PROJECT_REF:PASS@HOST:PORT/DB
+    const match = poolerUrl.match(/^postgresql:\/\/postgres\.([^.]+):([^@]+)@[^:]+:\d+\/(.+)$/);
     if (!match) return null;
 
-    const password = match[1];
-    const projectRef = match[2]; // e.g., kdktpojkuztruiyqlqlr
-    const database = match[4].split('?')[0]; // Remove query params
+    const projectRef = match[1]; // e.g., kdktpojkuztruiyqlqlr
+    const password = match[2]; // e.g., Bruno-0508202
+    const database = match[3].split('?')[0]; // Remove query params
 
-    // Build direct URL
+    // Build direct URL (using port 5432, not pooler port 6543)
     const directUrl = `postgresql://postgres:${password}@db.${projectRef}.supabase.co:5432/${database}`;
+    console.log(`Auto-generated DIRECT_URL: postgresql://postgres:***@db.${projectRef}.supabase.co:5432/${database}`);
     return directUrl;
-  } catch {
+  } catch (e) {
+    console.error('Error generating DIRECT_URL:', e);
     return null;
   }
 };
