@@ -29,14 +29,19 @@ export const loginController = async (req: Request, res: Response, next: NextFun
     }
 
     // Generate JWT token
+    const jwtSecret = env.JWT_SECRET || 'default-secret';
+    const jwtExpiresIn = env.JWT_EXPIRES_IN && env.JWT_EXPIRES_IN.trim() !== '' 
+      ? env.JWT_EXPIRES_IN 
+      : '7d';
+
     const token = jwt.sign(
       {
         id: user.id,
         email: user.email,
         role: user.role,
       },
-      env.JWT_SECRET || 'default-secret',
-      { expiresIn: env.JWT_EXPIRES_IN || '7d' } as any
+      jwtSecret,
+      { expiresIn: jwtExpiresIn } as any
     );
 
     // Log
