@@ -47,6 +47,8 @@ const createPrismaClient = () => {
     datasources: {
       db: { url: runtimeUrl },
     },
+    // Enable PgBouncer compatibility mode
+    log: ['query', 'error', 'warn'],
   });
 };
 
