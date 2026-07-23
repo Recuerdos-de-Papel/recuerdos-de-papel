@@ -31,11 +31,28 @@ import {
   UpdateSettingDto,
 } from '../dto';
 
-// Singleton PrismaClient
+// Singleton PrismaClient with PgBouncer support
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
-const prisma = globalForPrisma.prisma ?? new PrismaClient();
+
+const createPrismaClient = () => {
+  const databaseUrl = process.env.DATABASE_URL || '';
+  // Add pgbouncer=true if using Supabase pooler and not already set
+  const url = databaseUrl.includes('pgbouncer') || databaseUrl.includes('?')
+    ? databaseUrl
+    : databaseUrl.includes('pooler.supabase')
+      ? databaseUrl + '?pgbouncer=true'
+      : databaseUrl;
+
+  return new PrismaClient({
+    datasources: {
+      db: { url },
+    },
+  });
+};
+
+const prisma = globalForPrisma.prisma ?? createPrismaClient();
 globalForPrisma.prisma = prisma;
 
 // Helper to map product from Prisma
