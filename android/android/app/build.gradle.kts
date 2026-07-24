@@ -1,36 +1,47 @@
-flutter {
-    source = lib
+plugins {
+    id("com.android.application")
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
     namespace = "com.recuerdosdepapel.admin"
-    compileSdkVersion = 34
-    
+    compileSdk = 36
+    ndkVersion = flutter.ndkVersion
+
+    compileOptions {
+        isCoreLibraryDesugaringEnabled = true
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
     defaultConfig {
         applicationId = "com.recuerdosdepapel.admin"
-        minSdkVersion = 21
-        targetSdkVersion = 34
+        minSdk = flutter.minSdkVersion
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
     }
-    
-    signingConfigs {
-        release {
-            storeFile file("../keystore.jks")
-            storePassword "android"
-            keyAlias "android"
-            keyPassword "android"
-        }
-    }
-    
+
     buildTypes {
         release {
-            signingConfig signingConfigs.release
-            minifyEnabled false
+            // TODO: Add your own signing config for the release build.
+            // Signing with the debug keys for now, so `flutter run --release` works.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+    }
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+}
+
 flutter {
-    source = lib
+    source = "../.."
 }

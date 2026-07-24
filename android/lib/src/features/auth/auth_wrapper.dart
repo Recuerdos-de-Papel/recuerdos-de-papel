@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:recuerdos_de_papel_admin/src/core/network/api_client.dart';
 import 'package:recuerdos_de_papel_admin/src/core/providers/providers.dart';
 import 'package:recuerdos_de_papel_admin/src/features/auth/auth_service.dart';
+import 'package:recuerdos_de_papel_admin/src/features/auth/login_screen.dart';
 import 'package:recuerdos_de_papel_admin/src/features/home/home_screen.dart';
 
 class AuthWrapper extends ConsumerStatefulWidget {
@@ -49,9 +51,9 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
     final authState = ref.watch(authProvider);
     
     if (!authState.isAuthenticated) {
-      return const LoginScreen();
+      return LoginScreen();
     }
     
-    return const HomeScreen();
+    return HomeScreen();
   }
 }

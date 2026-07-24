@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:recuerdos_de_papel_admin/src/core/network/api_client.dart';
 import 'package:recuerdos_de_papel_admin/src/core/providers/providers.dart';
 import 'package:recuerdos_de_papel_admin/src/features/auth/auth_service.dart';
 import 'package:recuerdos_de_papel_admin/src/features/home/home_screen.dart';
@@ -28,9 +29,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   
   Future<void> _checkBiometrics() async {
     final localAuth = LocalAuthentication();
-    final canAuthenticate = await localAuth.canAuthenticate();
+    final canAuthenticate = await localAuth.canCheckBiometrics;
     setState(() {
-      _canUseBiometrics = canAuthenticate == BiometricAuthStatus.available;
+      _canUseBiometrics = canAuthenticate;
     });
   }
   
