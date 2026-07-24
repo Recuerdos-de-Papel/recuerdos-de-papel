@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import 'package:recuerdos_de_papel_admin/src/core/providers/providers.dart';
 import 'package:recuerdos_de_papel_admin/src/core/network/api_client.dart';
 import 'package:recuerdos_de_papel_admin/src/features/auth/auth_service.dart';
@@ -38,12 +39,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
   
   Future<void> _logout() async {
+    print("CLICK Logout");
     final authService = ref.read(authServiceProvider);
     await authService.logout();
     ref.read(authProvider.notifier).logout();
     
     if (mounted) {
-      Navigator.pushReplacementNamed(context, '/login');
+      context.go('/');
     }
   }
   
@@ -121,19 +123,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         onDestinationSelected: (index) {
           switch (index) {
             case 0:
-              Navigator.pushReplacementNamed(context, '/home');
+              print("CLICK Inicio");
+              context.go('/home');
               break;
             case 1:
-              Navigator.pushNamed(context, '/products');
+              debugPrint("CLICK PRODUCTS");
+              context.go('/products');
               break;
             case 2:
-              Navigator.pushNamed(context, '/orders');
+              debugPrint("CLICK ORDERS");
+              context.go('/orders');
               break;
             case 3:
-              Navigator.pushNamed(context, '/settings');
+              debugPrint("CLICK SETTINGS");
+              context.go('/settings');
               break;
             case 4:
-              Navigator.pushNamed(context, '/statistics');
+              debugPrint("CLICK STATISTICS");
+              context.go('/statistics');
               break;
           }
         },
@@ -274,40 +281,49 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           'Productos',
           Icons.inventory,
           '/products',
+          'PRODUCTS',
         ),
         _buildActionButton(
           'Categorías',
           Icons.category,
           '/categories',
+          'CATEGORIES',
         ),
         _buildActionButton(
           'Subfamilias',
           Icons.category_outlined,
           '/subfamilies',
+          'SUBFAMILIES',
         ),
         _buildActionButton(
           'Promociones',
           Icons.local_offer,
           '/promotions',
+          'PROMOTIONS',
         ),
         _buildActionButton(
           'Flyers',
           Icons.image,
           '/flyers',
+          'FLYERS',
         ),
         _buildActionButton(
           'Config',
           Icons.settings,
           '/settings',
+          'SETTINGS',
         ),
       ],
     );
   }
   
-  Widget _buildActionButton(String label, IconData icon, String route) {
+  Widget _buildActionButton(String label, IconData icon, String route, String logName) {
     return Card(
       child: InkWell(
-        onTap: () => Navigator.pushNamed(context, route),
+        onTap: () {
+          debugPrint("CLICK $logName");
+          context.go(route);
+        },
         borderRadius: BorderRadius.circular(12),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

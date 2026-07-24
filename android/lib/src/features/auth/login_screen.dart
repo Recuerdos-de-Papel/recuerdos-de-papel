@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:recuerdos_de_papel_admin/src/core/network/api_client.dart';
 import 'package:recuerdos_de_papel_admin/src/core/providers/providers.dart';
 import 'package:recuerdos_de_papel_admin/src/features/auth/auth_service.dart';
-import 'package:recuerdos_de_papel_admin/src/features/home/home_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -54,9 +54,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       );
       
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
+        context.go('/home');
       }
     } catch (e) {
       if (mounted) {

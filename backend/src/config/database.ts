@@ -17,15 +17,9 @@ export const connectDatabase = async () => {
   try {
     logger.info('Inicializando base de datos...');
     
-    // Auto-generar DIRECT_URL si no existe
-    if (!process.env.DIRECT_URL && process.env.DATABASE_URL) {
-      const directUrl = generateDirectUrl(process.env.DATABASE_URL);
-      if (directUrl) {
-        process.env.DIRECT_URL = directUrl;
-        process.env.DATABASE_URL = directUrl; // Force direct connection
-        logger.info('DIRECT_URL auto-generada y forzada como conexión principal');
-      }
-    }
+    // No se usa DIRECT_URL (inaccesible desde esta red).
+    // Se usa DATABASE_URL con Supabase Pooler (puerto 6543).
+    logger.info('Usando DATABASE_URL con Supabase Pooler (puerto 6543)');
 
     const { prisma } = await import('../modules/admin/services');
     

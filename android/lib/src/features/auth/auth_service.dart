@@ -22,6 +22,9 @@ class AuthService {
       final data = response.data;
       final authResponse = AuthResponse.fromJson(data);
       
+      // 🔥 FIX: Inyectar el token en ApiClient inmediatamente después del login
+      apiClient.setToken(authResponse.token);
+      
       // Save token securely
       await _storage.write(key: 'auth_token', value: authResponse.token);
       await _storage.write(key: 'admin_name', value: authResponse.admin.name);

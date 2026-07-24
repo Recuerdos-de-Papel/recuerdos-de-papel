@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:recuerdos_de_papel_admin/src/core/theme/app_theme.dart';
 import 'package:recuerdos_de_papel_admin/src/core/providers/providers.dart';
-import 'package:recuerdos_de_papel_admin/src/features/auth/auth_wrapper.dart';
+import 'package:recuerdos_de_papel_admin/src/app_router.dart';
 
 void main() {
   runApp(const ProviderScope(child: AdminApp()));
@@ -15,13 +15,13 @@ class AdminApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeProvider);
     
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Recuerdos de Papel - Admin',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
-      home: const AuthWrapper(),
+      routerConfig: router,
     );
   }
 }

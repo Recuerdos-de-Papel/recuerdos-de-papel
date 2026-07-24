@@ -10,7 +10,7 @@ class ProductsService {
   Future<List<Product>> getProducts() async {
     try {
       final response = await apiClient.dio.get('/products');
-      return (response.data as List)
+      return (response.data['products'] as List)
           .map((e) => Product.fromJson(e as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {

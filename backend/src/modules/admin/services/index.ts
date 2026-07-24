@@ -69,22 +69,12 @@ const poolerToDirectUrl = (poolerUrl: string): string | null => {
 
 const createPrismaClient = () => {
   const databaseUrl = process.env.DATABASE_URL || '';
-  let directUrl = process.env.DIRECT_URL || '';
 
-  // Auto-generate DIRECT_URL from DATABASE_URL if not provided
-  if (!directUrl) {
-    const generated = poolerToDirectUrl(databaseUrl);
-    if (generated) {
-      console.log('Auto-generated DIRECT_URL from DATABASE_URL');
-      directUrl = generated;
-    }
-  }
-
-  // Prefer DIRECT_URL to bypass PgBouncer completely
-  let runtimeUrl = directUrl || databaseUrl;
-
-  // If still using DATABASE_URL (no direct URL available), add pgbouncer=true
-  if (!directUrl && databaseUrl && !runtimeUrl.includes('pgbouncer=')) {
+  // Usar DATABASE_URL directamente con Supabase Pooler (puerto 6543).
+  // No se genera DIRECT_URL porque el puerto 5432 es inaccesible desde esta red.
+  // Se agrega pgbouncer=true para compatibilidad con PgBouncer.
+  let runtimeUrl = databaseUrl;
+  if (databaseUrl && !runtimeUrl.includes('pgbouncer=')) {
     runtimeUrl += (runtimeUrl.includes('?') ? '&' : '?') + 'pgbouncer=true';
   }
 

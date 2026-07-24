@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:recuerdos_de_papel_admin/src/core/network/api_client.dart';
 import 'package:recuerdos_de_papel_admin/src/core/providers/providers.dart';
 import 'package:recuerdos_de_papel_admin/src/features/auth/auth_service.dart';
 import 'package:recuerdos_de_papel_admin/src/features/auth/login_screen.dart';
-import 'package:recuerdos_de_papel_admin/src/features/home/home_screen.dart';
 
 class AuthWrapper extends ConsumerStatefulWidget {
   const AuthWrapper({super.key});
@@ -29,6 +29,10 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
     if (isLoggedIn) {
       final token = await authService.getToken();
       if (token != null) {
+        // 🔥 FIX: Inyectar el token en ApiClient al recuperar sesión
+        final apiClient = ref.read(apiClientProvider);
+        apiClient.setToken(token);
+        
         ref.read(authProvider.notifier).login(
           token,
           '',
@@ -37,7 +41,9 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
       }
     }
     
-    setState(() => _isLoading = false);
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
   
   @override
@@ -51,9 +57,21 @@ class _AuthWrapperState extends ConsumerState<AuthWrapper> {
     final authState = ref.watch(authProvider);
     
     if (!authState.isAuthenticated) {
-      return LoginScreen();
+      return const LoginScreen();
     }
     
-    return HomeScreen();
+    // 🔥 FIX: Usar GoRouter para navegar a /home en lugar de renderizar HomeScreen() directamente.
+    // Esto asegura que HomeScreen se monte dentro del árbol de GoRouter,
+    // permitiendo que context.go() funcione correctamente.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        debugPrint("AUTH_WRAPPER: Redirigiendo a /home");
+        context.go('/home');
+      }
+    });
+    
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
+    );
   }
 }
