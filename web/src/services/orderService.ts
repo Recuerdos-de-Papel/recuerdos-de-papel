@@ -11,8 +11,8 @@ export const getOrders = async (userId: string) => {
         product:products(*)
       )
     `)
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    .eq('userId', userId)
+    .order('createdAt', { ascending: false });
 
   if (error) throw error;
   return data as Order[];
@@ -31,7 +31,7 @@ export const getOrderById = async (id: string, userId?: string) => {
     .eq('id', id);
 
   if (userId) {
-    query = query.eq('user_id', userId);
+    query = query.eq('userId', userId);
   }
 
   const { data, error } = await query.single();
@@ -43,14 +43,14 @@ export const getOrderById = async (id: string, userId?: string) => {
 export const createOrder = async (order: Omit<Order, 'id' | 'createdAt' | 'updatedAt' | 'items'>, items: { productId: string; quantity: number; price: number }[]) => {
   const { data, error } = await supabase
     .from('orders')
-    .insert([{ ...order, user_id: order.userId }])
+    .insert([{ ...order, userId: order.userId }])
     .select()
     .single();
 
   if (error) throw error;
 
-  const orderId = data.id;
-  const orderItems = items.map(item => ({ ...item, order_id: orderId }));
+    const orderId = data.id;
+    const orderItems = items.map(item => ({ ...item, orderId: orderId }));
 
   const { error: itemsError } = await supabase
     .from('order_items')

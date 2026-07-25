@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 
 interface Address {
   id: string;
-  user_id: string;
+  userId: string;
   name: string;
   province: string;
   city: string;
@@ -15,7 +15,7 @@ interface Address {
   apartment?: string;
   postalCode: string;
   references?: string;
-  is_primary: boolean;
+  isPrimary: boolean;
 }
 
 export default function MyAddresses() {
@@ -38,34 +38,34 @@ export default function MyAddresses() {
 
   useEffect(() => {
     if (!user) return;
-    
+
     const fetchAddresses = async () => {
       const { data } = await supabase
         .from('addresses')
         .select('*')
-        .eq('user_id', user.id);
-      
+        .eq('userId', user.id);
+
       if (data) setAddresses(data);
     };
-    
+
     fetchAddresses();
   }, [user]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    
+
     setLoading(true);
-    
+
     const { data } = await supabase
       .from('addresses')
       .insert([{
-        user_id: user.id,
+        userId: user.id,
         ...formData,
-        is_primary: addresses.length === 0,
+        isPrimary: addresses.length === 0,
       }])
       .select();
-    
+
     if (data) {
       setAddresses([...addresses, data[0]]);
       setFormData({
@@ -82,7 +82,7 @@ export default function MyAddresses() {
       });
       setShowForm(false);
     }
-    
+
     setLoading(false);
   };
 
@@ -91,28 +91,28 @@ export default function MyAddresses() {
       .from('addresses')
       .delete()
       .eq('id', id);
-    
+
     setAddresses(addresses.filter(a => a.id !== id));
   };
 
   const handleSetPrimary = async (id: string) => {
     if (!user) return;
-    
+
     // Quitar primary de todas
     await supabase
       .from('addresses')
-      .update({ is_primary: false })
-      .eq('user_id', user.id);
-    
+      .update({ isPrimary: false })
+      .eq('userId', user.id);
+
     // Set primary en la seleccionada
     await supabase
       .from('addresses')
-      .update({ is_primary: true })
+      .update({ isPrimary: true })
       .eq('id', id);
-    
+
     setAddresses(addresses.map(a => ({
       ...a,
-      is_primary: a.id === id,
+      isPrimary: a.id === id,
     })));
   };
 
@@ -285,7 +285,7 @@ export default function MyAddresses() {
                 <div>
                   <div className="flex items-center gap-2">
                     <p className="font-medium">{addr.name}</p>
-                    {addr.is_primary && (
+                    {addr.isPrimary && (
                       <span className="text-xs bg-primary-100 text-primary-600 px-2 py-1 rounded">
                         Principal
                       </span>
@@ -302,7 +302,7 @@ export default function MyAddresses() {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  {!addr.is_primary && (
+                  {!addr.isPrimary && (
                     <button
                       onClick={() => handleSetPrimary(addr.id)}
                       className="text-primary-600 hover:underline text-sm"

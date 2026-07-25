@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:recuerdos_de_papel_admin/src/core/network/api_client.dart';
 
 // Theme Provider
 final themeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.system);
@@ -76,19 +77,49 @@ class PendingAction {
   });
 }
 
-// Dashboard Stats Provider
+// Dashboard Stats Provider - Llama a la API real
 final dashboardStatsProvider = FutureProvider<DashboardStats>((ref) async {
-  // Will be implemented to fetch from API
-  return DashboardStats(
-    salesToday: 0,
-    salesWeek: 0,
-    salesMonth: 0,
-    pendingOrders: 0,
-    productionOrders: 0,
-    readyOrders: 0,
-    deliveredOrders: 0,
-    totalIncome: 0,
-  );
+  final apiClient = ref.read(apiClientProvider);
+  try {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final weekAgo = today.subtract(const Duration(days: 7));
+    final monthAgo = DateTime(now.year, now.month - 1, now.day);
+    
+    // Obtener estadísticas desde la API de administración
+    final statisticsService = ref.read(statisticsServiceProvider);
+    
+    final dayStats = await statisticsService.getSalesStats(from: today, to: now);
+    final weekStats = await statisticsService.getSalesStats(from: weekAgo, to: now);
+    final monthStats = await statisticsService.getSalesStats(from: monthAgo, to: now);
+    
+    // Obtener pedidos
+    final ordersResponse = await apiClient.dio.get('/orders');
+    final orders = ordersResponse.data as List;
+    
+    return DashboardStats(
+      salesToday: (dayStats['totalSales'] ?? 0).toDouble(),
+      salesWeek: (weekStats['totalSales'] ?? 0).toDouble(),
+      salesMonth: (monthStats['totalSales'] ?? 0).toDouble(),
+      pendingOrders: orders.where((o) => o['status'] == 'pending').length,
+      productionOrders: orders.where((o) => o['status'] == 'in_production').length,
+      readyOrders: orders.where((o) => o['status'] == 'ready').length,
+      deliveredOrders: orders.where((o) => o['status'] == 'delivered').length,
+      totalIncome: (monthStats['totalSales'] ?? 0).toDouble(),
+    );
+  } catch (e) {
+    // Si falla la API, retornar datos por defecto
+    return DashboardStats(
+      salesToday: 0,
+      salesWeek: 0,
+      salesMonth: 0,
+      pendingOrders: 0,
+      productionOrders: 0,
+      readyOrders: 0,
+      deliveredOrders: 0,
+      totalIncome: 0,
+    );
+  }
 });
 
 class DashboardStats {
@@ -219,8 +250,8 @@ class Category {
   }
 }
 
-// Family Model
-class Family {
+// Family Model - Renamed to avoid conflict with riverpod's Family
+class ProductFamily {
   final String id;
   final String categoryId;
   final String name;
@@ -228,7 +259,7 @@ class Family {
   final int order;
   final bool isActive;
   
-  Family({
+  ProductFamily({
     required this.id,
     required this.categoryId,
     required this.name,
@@ -237,8 +268,8 @@ class Family {
     this.isActive = true,
   });
   
-  factory Family.fromJson(Map<String, dynamic> json) {
-    return Family(
+  factory ProductFamily.fromJson(Map<String, dynamic> json) {
+    return ProductFamily(
       id: json['id'] ?? '',
       categoryId: json['categoryId'] ?? '',
       name: json['name'] ?? '',

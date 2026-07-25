@@ -4,6 +4,7 @@ import { getProductById, getRelatedProducts } from '../services/productService';
 import type { Product } from '../types';
 import ProductCard from '../components/ProductCard';
 import { useCart } from '../context/CartContext';
+import { useSettings } from '../context/SettingsContext';
 
 type DeliveryOption = 'pickup' | 'local' | 'shipping';
 
@@ -41,6 +42,7 @@ export default function ProductPage() {
   const [selectedDelivery, setSelectedDelivery] = useState<DeliveryOption>('pickup');
   const [selectedImage, setSelectedImage] = useState(0);
   const { addItem } = useCart();
+  const { whatsapp, loading: settingsLoading } = useSettings();
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -121,6 +123,16 @@ export default function ProductPage() {
     addItem(product, quantity);
     navigate('/checkout');
   };
+
+  // Determinar disponibilidad basada en stock y estado
+  const isAvailable = product.status === 'available' && product.stock > 0;
+  const stockText = product.stock > 0 
+    ? `Stock disponible: ${product.stock} unidades` 
+    : 'Sin stock';
+
+  // WhatsApp number desde settings, con fallback
+  const whatsappNumber = whatsapp || '5491112345678';
+  const whatsappMessage = encodeURIComponent(`Consulta sobre ${product.name}`);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -206,8 +218,8 @@ export default function ProductPage() {
                 </div>
               </div>
 
-              {/* Status */}
-              <div className="mb-4">
+              {/* Status and Stock */}
+              <div className="mb-4 space-y-2">
                 <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
                   product.status === 'available' ? 'bg-green-100 text-green-800' :
                   product.status === 'in_production' ? 'bg-yellow-100 text-yellow-800' :
@@ -215,6 +227,11 @@ export default function ProductPage() {
                 }`}>
                   {statusLabels[product.status]}
                 </span>
+                <div className="text-sm text-gray-600">
+                  <span className={`font-medium ${isAvailable ? 'text-green-600' : 'text-red-600'}`}>
+                    {stockText}
+                  </span>
+                </div>
               </div>
 
               {/* Quantity selector */}
@@ -243,18 +260,20 @@ export default function ProductPage() {
               <div className="space-y-3 mb-6">
                 <button 
                   onClick={handleAddToCart}
-                  className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors"
+                  disabled={!isAvailable}
+                  className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
-                  AGREGAR AL CARRITO
+                  {isAvailable ? 'AGREGAR AL CARRITO' : 'PRODUCTO NO DISPONIBLE'}
                 </button>
                 <button 
                   onClick={handleBuyNow}
-                  className="w-full bg-gray-800 text-white py-3 rounded-lg font-medium hover:bg-gray-900 transition-colors"
+                  disabled={!isAvailable}
+                  className="w-full bg-gray-800 text-white py-3 rounded-lg font-medium hover:bg-gray-900 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   COMPRAR AHORA
                 </button>
                 <a
-                  href={`https://wa.me/5491112345678?text=Consulta%20sobre%20${encodeURIComponent(product.name)}`}
+                  href={`https://wa.me/${whatsappNumber}?text=${whatsappMessage}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full border border-green-500 text-green-500 py-3 rounded-lg font-medium hover:bg-green-50 transition-colors inline-block text-center"
@@ -288,10 +307,12 @@ export default function ProductPage() {
               </div>
 
               {/* Production time */}
-              <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
-                <h3 className="font-medium text-primary-800 mb-1">Tiempo estimado de producción</h3>
-                <p className="text-primary-600">{product.productionTime}</p>
-              </div>
+              {product.productionTime && (
+                <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+                  <h3 className="font-medium text-primary-800 mb-1">Tiempo estimado de producción</h3>
+                  <p className="text-primary-600">{product.productionTime}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

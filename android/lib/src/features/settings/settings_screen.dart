@@ -88,70 +88,73 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Configuración'),
+    return PopScope(
+      canPop: true,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Configuración'),
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _buildSettingTile(
+                    'Mercado Pago',
+                    'Alias',
+                    'mp_alias',
+                  ),
+                  _buildSettingTile(
+                    'Mercado Pago',
+                    'CBU',
+                    'mp_cbu',
+                  ),
+                  _buildSettingTile(
+                    'Mercado Pago',
+                    'QR',
+                    'mp_qr',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildSettingTile(
+                    'Costos',
+                    'Costo Córdoba',
+                    'cost_cordoba',
+                  ),
+                  _buildSettingTile(
+                    'Costos',
+                    'Costo Interior',
+                    'cost_interior',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildSettingTile(
+                    'Producción',
+                    'Tiempo Producción',
+                    'production_time',
+                  ),
+                  const SizedBox(height: 16),
+                  _buildSettingTile(
+                    'Contacto',
+                    'WhatsApp',
+                    'whatsapp',
+                  ),
+                  _buildSettingTile(
+                    'Contacto',
+                    'Instagram',
+                    'instagram',
+                  ),
+                  _buildSettingTile(
+                    'Contacto',
+                    'Facebook',
+                    'facebook',
+                  ),
+                  _buildSettingTile(
+                    'Contacto',
+                    'Email',
+                    'email',
+                  ),
+                ],
+              ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _buildSettingTile(
-                  'Mercado Pago',
-                  'Alias',
-                  'mp_alias',
-                ),
-                _buildSettingTile(
-                  'Mercado Pago',
-                  'CBU',
-                  'mp_cbu',
-                ),
-                _buildSettingTile(
-                  'Mercado Pago',
-                  'QR',
-                  'mp_qr',
-                ),
-                const SizedBox(height: 16),
-                _buildSettingTile(
-                  'Costos',
-                  'Costo Córdoba',
-                  'cost_cordoba',
-                ),
-                _buildSettingTile(
-                  'Costos',
-                  'Costo Interior',
-                  'cost_interior',
-                ),
-                const SizedBox(height: 16),
-                _buildSettingTile(
-                  'Producción',
-                  'Tiempo Producción',
-                  'production_time',
-                ),
-                const SizedBox(height: 16),
-                _buildSettingTile(
-                  'Contacto',
-                  'WhatsApp',
-                  'whatsapp',
-                ),
-                _buildSettingTile(
-                  'Contacto',
-                  'Instagram',
-                  'instagram',
-                ),
-                _buildSettingTile(
-                  'Contacto',
-                  'Facebook',
-                  'facebook',
-                ),
-                _buildSettingTile(
-                  'Contacto',
-                  'Email',
-                  'email',
-                ),
-              ],
-            ),
     );
   }
   

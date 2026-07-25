@@ -1,15 +1,18 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:recuerdos_de_papel_admin/src/core/network/api_client.dart';
 import 'package:recuerdos_de_papel_admin/src/core/providers/providers.dart';
 import 'package:recuerdos_de_papel_admin/src/features/products/products_service.dart';
+import 'package:recuerdos_de_papel_admin/src/features/subfamilies/subfamilies_service.dart';
 
 class ProductFormScreen extends ConsumerStatefulWidget {
   final Product? product;
-  
+
   const ProductFormScreen({super.key, this.product});
-  
+
   @override
   ConsumerState<ProductFormScreen> createState() => _ProductFormScreenState();
 }
@@ -23,14 +26,16 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
   late final TextEditingController _webPriceController;
   late final TextEditingController _costController;
   late final TextEditingController _stockController;
-  
+
   String? _selectedSubfamilyId;
+  List<Subfamily> _subfamilies = [];
+  bool _isLoadingSubfamilies = true;
   bool _isOffer = false;
   bool _isActive = true;
   String _status = 'available';
   List<String> _images = [];
   bool _isLoading = false;
-  
+
   @override
   void initState() {
     super.initState();
@@ -56,52 +61,79 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
     _isActive = widget.product?.isActive ?? true;
     _status = widget.product?.status ?? 'available';
     _images = widget.product?.images ?? [];
+    _loadSubfamilies();
   }
-  
+
+  Future<void> _loadSubfamilies() async {
+    try {
+      final subfamiliesService = ref.read(subfamiliesServiceProvider);
+      final subfamilies = await subfamiliesService.getSubfamilies();
+      if (mounted) {
+        setState(() {
+          _subfamilies = subfamilies;
+          _isLoadingSubfamilies = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingSubfamilies = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al cargar subfamilias: $e')),
+        );
+      }
+    }
+  }
+
   Future<void> _pickImages() async {
     final picker = ImagePicker();
     final pickedFiles = await picker.pickMultiImage();
-    
+
     if (pickedFiles.isNotEmpty) {
+      // NOTA: En producción, aquí se debería subir cada imagen al servidor
+      // y guardar la URL. Por ahora se guarda la ruta local como placeholder.
       setState(() {
         _images.addAll(pickedFiles.map((e) => e.path).toList());
       });
     }
   }
-  
+
   Future<void> _saveProduct() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() => _isLoading = true);
-    
+
     try {
       final productsService = ref.read(productsServiceProvider);
-      
+
       final data = {
         'name': _nameController.text,
         'code': _codeController.text,
         'description': _descriptionController.text,
         'price': double.parse(_priceController.text),
-        'webPrice': double.parse(_webPriceController.text),
-        'cost': _costController.text.isNotEmpty 
-            ? double.parse(_costController.text) 
+        'webPrice': _webPriceController.text.isNotEmpty
+            ? double.parse(_webPriceController.text)
+            : 0.0,
+        'cost': _costController.text.isNotEmpty
+            ? double.parse(_costController.text)
             : null,
-        'stock': int.parse(_stockController.text),
+        'stock': _stockController.text.isNotEmpty
+            ? int.parse(_stockController.text)
+            : 0,
         'subfamilyId': _selectedSubfamilyId,
         'isOffer': _isOffer,
         'isActive': _isActive,
         'status': _status,
         'images': _images,
       };
-      
+
       if (widget.product == null) {
         await productsService.createProduct(data);
       } else {
         await productsService.updateProduct(widget.product!.id, data);
       }
-      
+
       if (mounted) {
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
@@ -115,7 +147,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
       }
     }
   }
-  
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -127,14 +159,16 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
     _stockController.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
+    final canSave = !_isLoadingSubfamilies && _subfamilies.isNotEmpty;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.product == null ? 'Nuevo Producto' : 'Editar Producto'),
       ),
-      body: _isLoading
+      body: _isLoading || _isLoadingSubfamilies
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -143,6 +177,44 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (_subfamilies.isEmpty && !_isLoadingSubfamilies)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'Debe crear una subfamilia antes de crear productos.',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+
+                    // Subfamily Dropdown
+                    DropdownButtonFormField<String>(
+                      value: _selectedSubfamilyId,
+                      decoration: const InputDecoration(
+                        labelText: 'Subfamilia (Obligatorio)',
+                      ),
+                      items: _subfamilies.map((s) {
+                        return DropdownMenuItem(
+                          value: s.id,
+                          child: Text(s.name),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() => _selectedSubfamilyId = value);
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Seleccione una subfamilia';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
                     // Images Section
                     Text(
                       'Imágenes',
@@ -150,14 +222,14 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                     ),
                     const SizedBox(height: 8),
                     _buildImagesSection(),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Basic Info
                     TextFormField(
                       controller: _nameController,
                       decoration: const InputDecoration(
-                        labelText: 'Nombre',
+                        labelText: 'Nombre *',
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -167,80 +239,125 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-                    
+
                     TextFormField(
                       controller: _codeController,
                       decoration: const InputDecoration(
                         labelText: 'Código',
+                        hintText: 'Ej: PROD-001',
                       ),
                     ),
                     const SizedBox(height: 16),
-                    
+
                     TextFormField(
                       controller: _descriptionController,
                       decoration: const InputDecoration(
                         labelText: 'Descripción',
+                        hintText: 'Descripción del producto',
                       ),
                       maxLines: 3,
                     ),
                     const SizedBox(height: 16),
-                    
+
                     // Prices
                     Text(
                       'Precios',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 8),
-                    
+
                     TextFormField(
                       controller: _priceController,
                       decoration: const InputDecoration(
-                        labelText: 'Precio Normal',
+                        labelText: 'Precio Normal *',
+                        hintText: '0.00',
                       ),
                       keyboardType: TextInputType.number,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Ingrese el precio';
                         }
+                        if (double.tryParse(value) == null) {
+                          return 'Ingrese un número válido';
+                        }
+                        if (double.parse(value) < 0) {
+                          return 'El precio no puede ser negativo';
+                        }
                         return null;
                       },
                     ),
                     const SizedBox(height: 16),
-                    
+
                     TextFormField(
                       controller: _webPriceController,
                       decoration: const InputDecoration(
                         labelText: 'Precio Web',
+                        hintText: '0.00',
                       ),
                       keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value != null && value.isNotEmpty) {
+                          if (double.tryParse(value) == null) {
+                            return 'Ingrese un número válido';
+                          }
+                          if (double.parse(value) < 0) {
+                            return 'El precio no puede ser negativo';
+                          }
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
-                    
+
                     TextFormField(
                       controller: _costController,
                       decoration: const InputDecoration(
                         labelText: 'Costo',
+                        hintText: '0.00',
                       ),
                       keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value != null && value.isNotEmpty) {
+                          if (double.tryParse(value) == null) {
+                            return 'Ingrese un número válido';
+                          }
+                          if (double.parse(value) < 0) {
+                            return 'El costo no puede ser negativo';
+                          }
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
-                    
+
                     TextFormField(
                       controller: _stockController,
                       decoration: const InputDecoration(
                         labelText: 'Stock',
+                        hintText: '0',
                       ),
                       keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value != null && value.isNotEmpty) {
+                          if (int.tryParse(value) == null) {
+                            return 'Ingrese un número entero válido';
+                          }
+                          if (int.parse(value) < 0) {
+                            return 'El stock no puede ser negativo';
+                          }
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
-                    
+
                     // Status
                     Text(
                       'Estado',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 8),
-                    
+
                     SegmentedButton<String>(
                       segments: const [
                         ButtonSegment(
@@ -265,7 +382,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-                    
+
                     // Switches
                     SwitchListTile(
                       title: const Text('Activo'),
@@ -281,11 +398,11 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                         setState(() => _isOffer = value);
                       },
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     FilledButton(
-                      onPressed: _saveProduct,
+                      onPressed: canSave ? _saveProduct : null,
                       child: const Text('Guardar'),
                     ),
                   ],
@@ -294,7 +411,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
             ),
     );
   }
-  
+
   Widget _buildImagesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -306,6 +423,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
               scrollDirection: Axis.horizontal,
               itemCount: _images.length,
               itemBuilder: (context, index) {
+                final image = _images[index];
                 return Stack(
                   children: [
                     Container(
@@ -315,7 +433,9 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
                         image: DecorationImage(
-                          image: NetworkImage(_images[index]),
+                          image: (image.startsWith('http')
+                              ? NetworkImage(image)
+                              : FileImage(File(image))) as ImageProvider,
                           fit: BoxFit.cover,
                         ),
                       ),

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:recuerdos_de_papel_admin/src/features/auth/auth_service.dart';
 import 'package:recuerdos_de_papel_admin/src/features/products/products_service.dart';
 import 'package:recuerdos_de_papel_admin/src/features/categories/categories_service.dart';
+import 'package:recuerdos_de_papel_admin/src/features/families/families_service.dart';
 import 'package:recuerdos_de_papel_admin/src/features/subfamilies/subfamilies_service.dart';
 import 'package:recuerdos_de_papel_admin/src/features/promotions/promotions_service.dart';
 import 'package:recuerdos_de_papel_admin/src/features/flyers/flyers_service.dart';
@@ -101,6 +102,11 @@ final productsServiceProvider = Provider<ProductsService>((ref) {
 
 final categoriesServiceProvider = Provider<CategoriesService>((ref) {
   return CategoriesService(ApiClient());
+});
+
+
+final familiesServiceProvider = Provider<FamiliesService>((ref) {
+  return FamiliesService(ApiClient());
 });
 
 

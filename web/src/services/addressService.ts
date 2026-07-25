@@ -5,8 +5,8 @@ export const getAddresses = async (userId: string) => {
   const { data, error } = await supabase
     .from('addresses')
     .select('*')
-    .eq('user_id', userId)
-    .order('is_primary', { ascending: false });
+    .eq('userId', userId)
+    .order('isPrimary', { ascending: false });
 
   if (error) throw error;
   return data as Address[];
@@ -26,7 +26,7 @@ export const getAddressById = async (id: string) => {
 export const createAddress = async (address: Omit<Address, 'id' | 'createdAt' | 'updatedAt'>) => {
   const { data, error } = await supabase
     .from('addresses')
-    .insert([{ ...address, user_id: address.userId }])
+    .insert([{ ...address, userId: address.userId }])
     .select()
     .single();
 
@@ -58,14 +58,14 @@ export const deleteAddress = async (id: string) => {
 export const setDefaultAddress = async (userId: string, addressId: string) => {
   const { error: resetError } = await supabase
     .from('addresses')
-    .update({ is_primary: false })
-    .eq('user_id', userId);
+    .update({ isPrimary: false })
+    .eq('userId', userId);
 
   if (resetError) throw resetError;
 
   const { data, error } = await supabase
     .from('addresses')
-    .update({ is_primary: true })
+    .update({ isPrimary: true })
     .eq('id', addressId)
     .select()
     .single();

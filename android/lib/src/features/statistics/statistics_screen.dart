@@ -28,7 +28,6 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
     try {
       final statisticsService = ref.read(statisticsServiceProvider);
       
-      // Get today, week, month, year stats
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
       final weekAgo = today.subtract(const Duration(days: 7));
@@ -87,50 +86,50 @@ class _StatisticsScreenState extends ConsumerState<StatisticsScreen> {
   
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Estadísticas'),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadStatistics,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Billing Section
-                    Text(
-                      'Facturación',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildBillingGrid(),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Top Products
-                    Text(
-                      'Productos Más Vendidos',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTopProductsList(),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Top Categories
-                    Text(
-                      'Categorías Más Vendidas',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTopCategoriesList(),
-                  ],
+    return PopScope(
+      canPop: true,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Estadísticas'),
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _loadStatistics,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Facturación',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildBillingGrid(),
+                      
+                      const SizedBox(height: 24),
+                      
+                      Text(
+                        'Productos Más Vendidos',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildTopProductsList(),
+                      
+                      const SizedBox(height: 24),
+                      
+                      Text(
+                        'Categorías Más Vendidas',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildTopCategoriesList(),
+                    ],
+                  ),
                 ),
               ),
-            ),
+      ),
     );
   }
   

@@ -1,6 +1,36 @@
 import { Link } from 'react-router-dom';
+import { useSettings } from '../context/SettingsContext';
 
 export default function Contact() {
+  const {
+    businessName,
+    businessAddress,
+    businessEmail,
+    businessPhone,
+    whatsapp,
+    facebook,
+    instagram,
+    twitter,
+    tiktok,
+    youtube,
+  } = useSettings();
+
+  const displayName = businessName || 'RECUERDOS DE PAPEL';
+  const displayPhone = businessPhone || whatsapp || '';
+  const displayAddress = businessAddress || '';
+  const displayEmail = businessEmail || '';
+
+  // Construir enlaces de redes sociales dinámicamente
+  const socialLinks: { name: string; href: string | null }[] = [
+    { name: 'Facebook', href: facebook },
+    { name: 'Instagram', href: instagram },
+    { name: 'Twitter', href: twitter },
+    { name: 'TikTok', href: tiktok },
+    { name: 'YouTube', href: youtube },
+  ];
+
+  const activeSocialLinks = socialLinks.filter((link) => link.href);
+
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-4xl mx-auto px-4">
@@ -13,19 +43,41 @@ export default function Contact() {
             <div>
               <h2 className="text-2xl font-bold text-gray-800 mb-4">Información de Contacto</h2>
               <ul className="space-y-3 text-gray-600">
-                <li>
-                  <span className="font-medium">WhatsApp:</span> +54 9 11 1234-5678
-                </li>
-                <li>
-                  <span className="font-medium">Email:</span> info@recuerdosdepapel.com
-                </li>
-                <li>
-                  <span className="font-medium">Dirección:</span> Av. Corrientes 1234, CABA
-                </li>
-                <li>
-                  <span className="font-medium">Horario:</span> Lunes a Viernes 9:00 - 18:00
-                </li>
+                {displayPhone && (
+                  <li>
+                    <span className="font-medium">WhatsApp:</span> {displayPhone}
+                  </li>
+                )}
+                {displayEmail && (
+                  <li>
+                    <span className="font-medium">Email:</span> {displayEmail}
+                  </li>
+                )}
+                {displayAddress && (
+                  <li>
+                    <span className="font-medium">Dirección:</span> {displayAddress}
+                  </li>
+                )}
               </ul>
+
+              {activeSocialLinks.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Redes Sociales</h3>
+                  <div className="flex flex-col gap-2">
+                    {activeSocialLinks.map((social) => (
+                      <a
+                        key={social.name}
+                        href={social.href!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary-600 hover:text-primary-700 transition-colors"
+                      >
+                        {social.name}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             
             <div>

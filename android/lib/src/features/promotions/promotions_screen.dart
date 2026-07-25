@@ -107,139 +107,141 @@ class _PromotionsScreenState extends ConsumerState<PromotionsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  promotion == null ? 'Nueva Promoción' : 'Editar Promoción',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _titleController,
-                  decoration: const InputDecoration(labelText: 'Título'),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Ingrese el título';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _descriptionController,
-                  decoration: const InputDecoration(labelText: 'Descripción'),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _discountController,
-                  decoration: const InputDecoration(labelText: 'Descuento (%)'),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Ingrese el descuento';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _codeController,
-                  decoration: const InputDecoration(labelText: 'Código'),
-                ),
-                const SizedBox(height: 16),
-                ListTile(
-                  title: const Text('Fecha Inicio'),
-                  subtitle: Text(_startDate.toLocal().toString().split(' ')[0]),
-                  trailing: const Icon(Icons.calendar_today),
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _startDate,
-                      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (picked != null) {
-                      _startDate = picked;
-                    }
-                  },
-                ),
-                ListTile(
-                  title: const Text('Fecha Fin'),
-                  subtitle: Text(_endDate.toLocal().toString().split(' ')[0]),
-                  trailing: const Icon(Icons.calendar_today),
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _endDate,
-                      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-                    if (picked != null) {
-                      _endDate = picked;
-                    }
-                  },
-                ),
-                SwitchListTile(
-                  title: const Text('Activo'),
-                  value: _isActive,
-                  onChanged: (value) {
-                    _isActive = value;
-                  },
-                ),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: () async {
-                    if (_formKey.currentState!.validate()) {
-                      try {
-                        final promotionsService = ref.read(promotionsServiceProvider);
-                        if (promotion == null) {
-                          await promotionsService.createPromotion({
-                            'title': _titleController.text,
-                            'description': _descriptionController.text,
-                            'discount': double.parse(_discountController.text),
-                            'code': _codeController.text,
-                            'startDate': _startDate,
-                            'endDate': _endDate,
-                            'isActive': _isActive,
-                          });
-                        } else {
-                          await promotionsService.updatePromotion(promotion.id, {
-                            'title': _titleController.text,
-                            'description': _descriptionController.text,
-                            'discount': double.parse(_discountController.text),
-                            'code': _codeController.text,
-                            'startDate': _startDate,
-                            'endDate': _endDate,
-                            'isActive': _isActive,
-                          });
-                        }
-                        if (mounted) {
-                          Navigator.pop(context);
-                          _loadPromotions();
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(e.toString())),
-                          );
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    promotion == null ? 'Nueva Promoción' : 'Editar Promoción',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _titleController,
+                    decoration: const InputDecoration(labelText: 'Título'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Ingrese el título';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _descriptionController,
+                    decoration: const InputDecoration(labelText: 'Descripción'),
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _discountController,
+                    decoration: const InputDecoration(labelText: 'Descuento (%)'),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Ingrese el descuento';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _codeController,
+                    decoration: const InputDecoration(labelText: 'Código'),
+                  ),
+                  const SizedBox(height: 16),
+                  ListTile(
+                    title: const Text('Fecha Inicio'),
+                    subtitle: Text(_startDate.toLocal().toString().split(' ')[0]),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _startDate,
+                        firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (picked != null) {
+                        setSheetState(() => _startDate = picked);
+                      }
+                    },
+                  ),
+                  ListTile(
+                    title: const Text('Fecha Fin'),
+                    subtitle: Text(_endDate.toLocal().toString().split(' ')[0]),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: _endDate,
+                        firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
+                      );
+                      if (picked != null) {
+                        setSheetState(() => _endDate = picked);
+                      }
+                    },
+                  ),
+                  SwitchListTile(
+                    title: const Text('Activo'),
+                    value: _isActive,
+                    onChanged: (value) {
+                      setSheetState(() => _isActive = value);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: () async {
+                      if (_formKey.currentState!.validate()) {
+                        try {
+                          final promotionsService = ref.read(promotionsServiceProvider);
+                          if (promotion == null) {
+                            await promotionsService.createPromotion({
+                              'title': _titleController.text,
+                              'description': _descriptionController.text,
+                              'discount': double.parse(_discountController.text),
+                              'code': _codeController.text,
+                              'startDate': _startDate,
+                              'endDate': _endDate,
+                              'isActive': _isActive,
+                            });
+                          } else {
+                            await promotionsService.updatePromotion(promotion.id, {
+                              'title': _titleController.text,
+                              'description': _descriptionController.text,
+                              'discount': double.parse(_discountController.text),
+                              'code': _codeController.text,
+                              'startDate': _startDate,
+                              'endDate': _endDate,
+                              'isActive': _isActive,
+                            });
+                          }
+                          if (mounted) {
+                            Navigator.pop(context);
+                            _loadPromotions();
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(e.toString())),
+                            );
+                          }
                         }
                       }
-                    }
-                  },
-                  child: const Text('Guardar'),
-                ),
-              ],
+                    },
+                    child: const Text('Guardar'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -249,48 +251,51 @@ class _PromotionsScreenState extends ConsumerState<PromotionsScreen> {
   
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Promociones'),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadPromotions,
-              child: ListView.builder(
-                itemCount: _promotions.length,
-                itemBuilder: (context, index) {
-                  final promotion = _promotions[index];
-                  return Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                    child: ListTile(
-                      title: Text(promotion.title),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('${promotion.discount}% de descuento'),
-                          Text(
-                            '${promotion.startDate.toLocal().toString().split(' ')[0]} - ${promotion.endDate.toLocal().toString().split(' ')[0]}',
-                          ),
-                        ],
+    return PopScope(
+      canPop: true,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Promociones'),
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _loadPromotions,
+                child: ListView.builder(
+                  itemCount: _promotions.length,
+                  itemBuilder: (context, index) {
+                    final promotion = _promotions[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
                       ),
-                      trailing: Switch(
-                        value: promotion.isActive,
-                        onChanged: (_) => _toggleActive(promotion),
+                      child: ListTile(
+                        title: Text(promotion.title),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${promotion.discount}% de descuento'),
+                            Text(
+                              '${promotion.startDate.toLocal().toString().split(' ')[0]} - ${promotion.endDate.toLocal().toString().split(' ')[0]}',
+                            ),
+                          ],
+                        ),
+                        trailing: Switch(
+                          value: promotion.isActive,
+                          onChanged: (_) => _toggleActive(promotion),
+                        ),
+                        onTap: () => _showForm(promotion: promotion),
+                        onLongPress: () => _deletePromotion(promotion),
                       ),
-                      onTap: () => _showForm(promotion: promotion),
-                      onLongPress: () => _deletePromotion(promotion),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showForm(),
-        child: const Icon(Icons.add),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => _showForm(),
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }

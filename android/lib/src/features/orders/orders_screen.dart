@@ -183,87 +183,90 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pedidos'),
-        actions: [
-          PopupMenuButton<String?>(
-            onSelected: (status) {
-              setState(() => _selectedStatus = status);
-              _loadOrders();
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: null,
-                child: Text('Todos'),
-              ),
-              const PopupMenuItem(
-                value: 'pending',
-                child: Text('Pendientes'),
-              ),
-              const PopupMenuItem(
-                value: 'payment_pending',
-                child: Text('Pago Pendiente'),
-              ),
-              const PopupMenuItem(
-                value: 'paid',
-                child: Text('Pagos Aprobados'),
-              ),
-              const PopupMenuItem(
-                value: 'in_production',
-                child: Text('En Producción'),
-              ),
-              const PopupMenuItem(
-                value: 'ready',
-                child: Text('Listos'),
-              ),
-              const PopupMenuItem(
-                value: 'delivered',
-                child: Text('Entregados'),
-              ),
-            ],
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadOrders,
-              child: ListView.builder(
-                itemCount: _orders.length,
-                itemBuilder: (context, index) {
-                  final order = _orders[index];
-                  return Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                    child: ListTile(
-                      title: Text(
-                        'Pedido #${order.id.substring(0, 8)}',
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(order.customerName),
-                          Text(
-                            '\$${order.total.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      trailing: Chip(
-                        label: Text(_getStatusLabel(order.status)),
-                        backgroundColor: _getStatusColor(order.status),
-                      ),
-                      onTap: () => _showOrderDetails(order),
-                    ),
-                  );
-                },
-              ),
+    return PopScope(
+      canPop: true,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Pedidos'),
+          actions: [
+            PopupMenuButton<String?>(
+              onSelected: (status) {
+                setState(() => _selectedStatus = status);
+                _loadOrders();
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: null,
+                  child: Text('Todos'),
+                ),
+                const PopupMenuItem(
+                  value: 'pending',
+                  child: Text('Pendientes'),
+                ),
+                const PopupMenuItem(
+                  value: 'payment_pending',
+                  child: Text('Pago Pendiente'),
+                ),
+                const PopupMenuItem(
+                  value: 'paid',
+                  child: Text('Pagos Aprobados'),
+                ),
+                const PopupMenuItem(
+                  value: 'in_production',
+                  child: Text('En Producción'),
+                ),
+                const PopupMenuItem(
+                  value: 'ready',
+                  child: Text('Listos'),
+                ),
+                const PopupMenuItem(
+                  value: 'delivered',
+                  child: Text('Entregados'),
+                ),
+              ],
             ),
+          ],
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _loadOrders,
+                child: ListView.builder(
+                  itemCount: _orders.length,
+                  itemBuilder: (context, index) {
+                    final order = _orders[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
+                      child: ListTile(
+                        title: Text(
+                          'Pedido #${order.id.substring(0, 8)}',
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(order.customerName),
+                            Text(
+                              '\$${order.total.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        trailing: Chip(
+                          label: Text(_getStatusLabel(order.status)),
+                          backgroundColor: _getStatusColor(order.status),
+                        ),
+                        onTap: () => _showOrderDetails(order),
+                      ),
+                    );
+                  },
+                ),
+              ),
+      ),
     );
   }
   

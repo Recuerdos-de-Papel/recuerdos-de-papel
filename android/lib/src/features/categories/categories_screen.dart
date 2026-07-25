@@ -186,42 +186,45 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
   
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Categorías'),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadCategories,
-              child: ListView.builder(
-                itemCount: _categories.length,
-                itemBuilder: (context, index) {
-                  final category = _categories[index];
-                  return Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 4,
-                    ),
-                    child: ListTile(
-                      title: Text(category.name),
-                      subtitle: category.description != null
-                          ? Text(category.description!)
-                          : null,
-                      trailing: Switch(
-                        value: category.isActive,
-                        onChanged: (_) => _toggleActive(category),
+    return PopScope(
+      canPop: true,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Categorías'),
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _loadCategories,
+                child: ListView.builder(
+                  itemCount: _categories.length,
+                  itemBuilder: (context, index) {
+                    final category = _categories[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
                       ),
-                      onTap: () => _showForm(category: category),
-                      onLongPress: () => _deleteCategory(category),
-                    ),
-                  );
-                },
+                      child: ListTile(
+                        title: Text(category.name),
+                        subtitle: category.description != null
+                            ? Text(category.description!)
+                            : null,
+                        trailing: Switch(
+                          value: category.isActive,
+                          onChanged: (_) => _toggleActive(category),
+                        ),
+                        onTap: () => _showForm(category: category),
+                        onLongPress: () => _deleteCategory(category),
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showForm(),
-        child: const Icon(Icons.add),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => _showForm(),
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }

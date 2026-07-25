@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getCategories } from '../services/categoryService';
+import { getCategories } from '../services/productService';
 import type { Category } from '../types';
 import {
   PencilIcon, 
@@ -23,6 +23,7 @@ export default function CategoriesSection() {
   useEffect(() => {
     const loadCategories = async () => {
       try {
+        // Usa productService.getCategories() que filtra por isActive: true
         const data = await getCategories();
         setCategories(data);
       } catch (error) {

@@ -1,9 +1,10 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { ShoppingCartIcon, Bars3Icon, XMarkIcon, UserIcon } from '@heroicons/react/24/outline';
 import { useState, useEffect } from 'react';
-import { getCategories } from '../services/categoryService';
+import { getCategories } from '../services/productService';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import type { Category } from '../types';
 
 export default function Header() {
@@ -12,6 +13,7 @@ export default function Header() {
   const [categories, setCategories] = useState<Category[]>([]);
   const { totalItems } = useCart();
   const { user, logout, isAuthenticated } = useAuth();
+  const { logo, businessName, loading: settingsLoading } = useSettings();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -46,14 +48,26 @@ export default function Header() {
     navigate('/');
   };
 
+  const displayName = businessName || 'RECUERDOS DE PAPEL';
+
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link to="/" className="flex flex-col">
-            <span className="text-2xl font-bold text-primary-600">RECUERDOS DE PAPEL</span>
-            <span className="text-sm text-gray-500">Papelería Creativa</span>
+          {/* Logo - desde settingsService */}
+          <Link to="/" className="flex items-center gap-3">
+            {logo ? (
+              <img
+                src={logo}
+                alt={displayName}
+                className="h-10 w-auto object-contain"
+              />
+            ) : (
+              <span className="text-2xl font-bold text-primary-600">{displayName}</span>
+            )}
+            {!logo && (
+              <span className="text-sm text-gray-500">Papelería Creativa</span>
+            )}
           </Link>
 
           {/* Desktop Menu */}

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:recuerdos_de_papel_admin/src/core/providers/providers.dart';
 import 'package:recuerdos_de_papel_admin/src/core/network/api_client.dart';
-import 'package:recuerdos_de_papel_admin/src/features/auth/auth_service.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -34,8 +32,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   
   Future<void> _loadStats() async {
     setState(() => _isLoading = true);
-    // Will be implemented to fetch from API
-    setState(() => _isLoading = false);
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final weekAgo = today.subtract(const Duration(days: 7));
+      final monthAgo = DateTime(now.year, now.month - 1, now.day);
+      
+      final statisticsService = ref.read(statisticsServiceProvider);
+      
+      final dayStats = await statisticsService.getSalesStats(from: today, to: now);
+      final weekStats = await statisticsService.getSalesStats(from: weekAgo, to: now);
+      final monthStats = await statisticsService.getSalesStats(from: monthAgo, to: now);
+      
+      final ordersResponse = await apiClient.dio.get('/orders');
+      final orders = ordersResponse.data as List;
+      
+      if (mounted) {
+        setState(() {
+          _stats = DashboardStats(
+            salesToday: (dayStats['totalSales'] ?? 0).toDouble(),
+            salesWeek: (weekStats['totalSales'] ?? 0).toDouble(),
+            salesMonth: (monthStats['totalSales'] ?? 0).toDouble(),
+            pendingOrders: orders.where((o) => o['status'] == 'pending').length,
+            productionOrders: orders.where((o) => o['status'] == 'in_production').length,
+            readyOrders: orders.where((o) => o['status'] == 'ready').length,
+            deliveredOrders: orders.where((o) => o['status'] == 'delivered').length,
+            totalIncome: (monthStats['totalSales'] ?? 0).toDouble(),
+          );
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al cargar estadísticas: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
   
   Future<void> _logout() async {
@@ -53,119 +90,97 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dashboard'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.brightness_6),
-            onPressed: () {
-              ref.read(themeProvider.notifier).state = 
-                ref.read(themeProvider) == ThemeMode.dark 
-                    ? ThemeMode.light 
-                    : ThemeMode.dark;
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _logout,
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _loadStats,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Bienvenido, ${authState.adminName ?? 'Admin'}',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    // Sales Section
-                    Text(
-                      'Ventas',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildStatsGrid(),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Orders Section
-                    Text(
-                      'Pedidos',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildOrdersGrid(),
-                    
-                    const SizedBox(height: 24),
-                    
-                    // Quick Actions
-                    Text(
-                      'Acciones Rápidas',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildQuickActions(),
-                  ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Cerrar sesión'),
+              content: const Text('¿Está seguro de que desea salir?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _logout();
+                  },
+                  child: const Text('Salir'),
+                ),
+              ],
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Dashboard'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.brightness_6),
+              onPressed: () {
+                ref.read(themeProvider.notifier).state = 
+                  ref.read(themeProvider) == ThemeMode.dark 
+                      ? ThemeMode.light 
+                      : ThemeMode.dark;
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: _logout,
+            ),
+          ],
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _loadStats,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Bienvenido, ${authState.adminName ?? 'Admin'}',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Sales Section
+                      Text(
+                        'Ventas',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildStatsGrid(),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Orders Section
+                      Text(
+                        'Pedidos',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildOrdersGrid(),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // Quick Actions
+                      Text(
+                        'Acciones Rápidas',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 16),
+                      _buildQuickActions(),
+                    ],
+                  ),
                 ),
               ),
-            ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: 0,
-        onDestinationSelected: (index) {
-          switch (index) {
-            case 0:
-              print("CLICK Inicio");
-              context.go('/home');
-              break;
-            case 1:
-              debugPrint("CLICK PRODUCTS");
-              context.go('/products');
-              break;
-            case 2:
-              debugPrint("CLICK ORDERS");
-              context.go('/orders');
-              break;
-            case 3:
-              debugPrint("CLICK SETTINGS");
-              context.go('/settings');
-              break;
-            case 4:
-              debugPrint("CLICK STATISTICS");
-              context.go('/statistics');
-              break;
-          }
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home),
-            label: 'Inicio',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.inventory),
-            label: 'Productos',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.shopping_bag),
-            label: 'Pedidos',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings),
-            label: 'Config',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.analytics),
-            label: 'Estadísticas',
-          ),
-        ],
       ),
     );
   }
@@ -288,6 +303,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Icons.category,
           '/categories',
           'CATEGORIES',
+        ),
+        _buildActionButton(
+          'Familias',
+          Icons.account_tree,
+          '/families',
+          'FAMILIES',
         ),
         _buildActionButton(
           'Subfamilias',

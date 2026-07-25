@@ -1,6 +1,36 @@
 import { Link } from 'react-router-dom';
+import { useSettings } from '../context/SettingsContext';
 
 export default function Footer() {
+  const {
+    businessName,
+    businessAddress,
+    businessEmail,
+    businessPhone,
+    whatsapp,
+    facebook,
+    instagram,
+    twitter,
+    tiktok,
+    youtube,
+  } = useSettings();
+
+  const displayName = businessName || 'RECUERDOS DE PAPEL';
+  const displayPhone = businessPhone || whatsapp || '';
+  const displayAddress = businessAddress || '';
+  const displayEmail = businessEmail || '';
+
+  // Construir enlaces de redes sociales dinámicamente
+  const socialLinks: { name: string; href: string | null; icon: string }[] = [
+    { name: 'Facebook', href: facebook, icon: 'facebook' },
+    { name: 'Instagram', href: instagram, icon: 'instagram' },
+    { name: 'Twitter', href: twitter, icon: 'twitter' },
+    { name: 'TikTok', href: tiktok, icon: 'tiktok' },
+    { name: 'YouTube', href: youtube, icon: 'youtube' },
+  ];
+
+  const activeSocialLinks = socialLinks.filter((link) => link.href);
+
   return (
     <footer className="bg-gray-800 text-white py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -8,29 +38,26 @@ export default function Footer() {
           {/* Logo y descripción */}
           <div>
             <h3 className="text-2xl font-bold text-primary-400 mb-4">
-              RECUERDOS DE PAPEL
+              {displayName}
             </h3>
             <p className="text-gray-300 mb-4">
               Papelería Creativa con productos personalizados, sublimación, estampados e impresiones de alta calidad.
             </p>
-            <div className="flex space-x-4">
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-300 hover:text-primary-400 transition-colors"
-              >
-                Facebook
-              </a>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-300 hover:text-primary-400 transition-colors"
-              >
-                Instagram
-              </a>
-            </div>
+            {activeSocialLinks.length > 0 && (
+              <div className="flex space-x-4">
+                {activeSocialLinks.map((social) => (
+                  <a
+                    key={social.name}
+                    href={social.href!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-300 hover:text-primary-400 transition-colors"
+                  >
+                    {social.name}
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Enlaces rápidos */}
@@ -65,25 +92,31 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Contacto */}
+          {/* Contacto - desde settingsService */}
           <div>
             <h4 className="text-lg font-semibold mb-4">Contacto</h4>
             <ul className="space-y-2 text-gray-300">
-              <li>
-                <span className="block">📱 WhatsApp: +54 9 11 1234-5678</span>
-              </li>
-              <li>
-                <span className="block">📍 Dirección: Av. Corrientes 1234, CABA</span>
-              </li>
-              <li>
-                <span className="block">✉️ Email: info@recuerdosdepapel.com</span>
-              </li>
+              {displayPhone && (
+                <li>
+                  <span className="block">📱 WhatsApp: {displayPhone}</span>
+                </li>
+              )}
+              {displayAddress && (
+                <li>
+                  <span className="block">📍 Dirección: {displayAddress}</span>
+                </li>
+              )}
+              {displayEmail && (
+                <li>
+                  <span className="block">✉️ Email: {displayEmail}</span>
+                </li>
+              )}
             </ul>
           </div>
         </div>
 
         <div className="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400">
-          <p>&copy; {new Date().getFullYear()} RECUERDOS DE PAPEL. Todos los derechos reservados.</p>
+          <p>&copy; {new Date().getFullYear()} {displayName}. Todos los derechos reservados.</p>
         </div>
       </div>
     </footer>

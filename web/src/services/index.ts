@@ -18,3 +18,5 @@ export * from './orderService';
 export * from './favoriteService';
 export * from './addressService';
 export * from './storageService';
+export * from './flyersService';
+export * from './settingsService';
