@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { env } from '../../../config/env';
@@ -103,22 +103,7 @@ export const registerAdminController = async (req: Request, res: Response, next:
     });
 
     if (existingAdmin) {
-      // Si el email coincide con el admin existente, permitir reset de contraseña (QA)
-      if (existingAdmin.email === email) {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        await prisma.user.update({
-          where: { id: existingAdmin.id },
-          data: { password: hashedPassword },
-        });
-        return res.status(200).json({
-          message: 'Contraseña actualizada exitosamente',
-          admin: { id: existingAdmin.id, email: existingAdmin.email, name: existingAdmin.name },
-        });
-      }
-      return res.status(400).json({ 
-        error: 'Ya existe un administrador registrado',
-        existingAdminEmail: existingAdmin.email 
-      });
+      return res.status(400).json({ error: 'Ya existe un administrador registrado' });
     }
 
     // Verificar si el email ya está en uso
