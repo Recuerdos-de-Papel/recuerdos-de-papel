@@ -56,6 +56,7 @@ import {
 } from '../controllers/statisticsController';
 import {
   loginController,
+  registerAdminController,
   profileController,
 } from '../controllers/authController';
 
@@ -63,6 +64,7 @@ const router = Router();
 
 // Auth routes (no auth required)
 router.post('/auth/login', loginController);
+router.post('/auth/register', registerAdminController);
 
 // Protected routes
 router.use(adminAuth);

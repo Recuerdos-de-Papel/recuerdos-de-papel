@@ -119,6 +119,12 @@ export const adminLoginSchema = z.object({
   password: z.string().min(1, 'La contraseña es requerida'),
 });
 
+export const adminRegisterSchema = z.object({
+  email: z.string().email('Email inválido'),
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
+  name: z.string().min(1, 'El nombre es requerido'),
+});
+
 // Statistics validators
 export const statisticsFilterSchema = z.object({
   from: z.coerce.date().optional(),
