@@ -42,7 +42,7 @@ export default function ProductPage() {
   const [selectedDelivery, setSelectedDelivery] = useState<DeliveryOption>('pickup');
   const [selectedImage, setSelectedImage] = useState(0);
   const { addItem } = useCart();
-  const { whatsapp, loading: settingsLoading } = useSettings();
+  const { whatsapp } = useSettings();
 
   useEffect(() => {
     const loadProduct = async () => {

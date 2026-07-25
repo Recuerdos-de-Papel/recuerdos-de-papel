@@ -13,7 +13,7 @@ export default function Header() {
   const [categories, setCategories] = useState<Category[]>([]);
   const { totalItems } = useCart();
   const { user, logout, isAuthenticated } = useAuth();
-  const { logo, businessName, loading: settingsLoading } = useSettings();
+  const { logo, businessName } = useSettings();
   const navigate = useNavigate();
 
   useEffect(() => {

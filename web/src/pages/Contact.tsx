@@ -15,7 +15,6 @@ export default function Contact() {
     youtube,
   } = useSettings();
 
-  const displayName = businessName || 'RECUERDOS DE PAPEL';
   const displayPhone = businessPhone || whatsapp || '';
   const displayAddress = businessAddress || '';
   const displayEmail = businessEmail || '';
