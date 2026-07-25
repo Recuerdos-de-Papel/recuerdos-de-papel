@@ -13,7 +13,19 @@ function getProductImages(product: Product): string[] {
   try {
     const parsed = JSON.parse(product.images);
     if (Array.isArray(parsed)) {
-      return parsed.map((item: any) => item?.url || item);
+      return parsed.map((item: any) => {
+        if (typeof item === 'string') {
+          // Si es un string, puede ser un nombre de archivo o una URL completa
+          if (item.startsWith('http')) {
+            return item;
+          }
+          // Construir URL de Supabase Storage
+          const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+          const bucketName = 'product-images';
+          return `${supabaseUrl}/storage/v1/object/public/${bucketName}/${item}`;
+        }
+        return item?.url || '';
+      });
     }
     return typeof parsed === 'string' ? [parsed] : [];
   } catch {

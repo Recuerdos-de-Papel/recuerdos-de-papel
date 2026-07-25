@@ -13,7 +13,14 @@ function getProductImage(product: Product): string {
     if (Array.isArray(parsed) && parsed.length > 0) {
       const firstImage = parsed[0];
       if (typeof firstImage === 'string') {
-        return firstImage;
+        // Si es un string, puede ser un nombre de archivo o una URL completa
+        if (firstImage.startsWith('http')) {
+          return firstImage;
+        }
+        // Construir URL de Supabase Storage
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const bucketName = 'product-images'; // Nombre del bucket en Supabase
+        return `${supabaseUrl}/storage/v1/object/public/${bucketName}/${firstImage}`;
       }
       return firstImage?.url || '';
     }
