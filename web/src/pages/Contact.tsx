@@ -3,7 +3,6 @@ import { useSettings } from '../context/SettingsContext';
 
 export default function Contact() {
   const {
-    businessName,
     businessAddress,
     businessEmail,
     businessPhone,
