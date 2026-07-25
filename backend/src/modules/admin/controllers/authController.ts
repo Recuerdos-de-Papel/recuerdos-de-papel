@@ -103,7 +103,10 @@ export const registerAdminController = async (req: Request, res: Response, next:
     });
 
     if (existingAdmin) {
-      return res.status(400).json({ error: 'Ya existe un administrador registrado' });
+      return res.status(400).json({ 
+        error: 'Ya existe un administrador registrado',
+        existingAdminEmail: existingAdmin.email 
+      });
     }
 
     // Verificar si el email ya está en uso
