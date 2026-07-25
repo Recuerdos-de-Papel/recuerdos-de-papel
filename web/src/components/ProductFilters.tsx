@@ -110,7 +110,8 @@ export default function ProductFilters({
           <select
             value={selectedCategory}
             onChange={(e) => {
-              onCategoryChange(e.target.value);
+              const value = e.target.value;
+              onCategoryChange(value);
               onFamilyChange('');
               onSubfamilyChange('');
             }}

@@ -11,7 +11,11 @@ function getProductImage(product: Product): string {
   try {
     const parsed = JSON.parse(product.images);
     if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed[0]?.url || parsed[0] || '';
+      const firstImage = parsed[0];
+      if (typeof firstImage === 'string') {
+        return firstImage;
+      }
+      return firstImage?.url || '';
     }
     return typeof parsed === 'string' ? parsed : '';
   } catch {
