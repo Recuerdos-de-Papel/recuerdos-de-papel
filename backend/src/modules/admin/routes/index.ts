@@ -17,6 +17,14 @@ import {
   deleteCategoryController,
 } from '../controllers/categoryController';
 import {
+  getFamiliesController,
+  getFamiliesByCategoryController,
+  getFamilyByIdController,
+  createFamilyController,
+  updateFamilyController,
+  deleteFamilyController,
+} from '../controllers/familyController';
+import {
   getSubfamiliesController,
   getSubfamiliesByFamilyController,
   getSubfamilyByIdController,
@@ -87,6 +95,14 @@ router.get('/categories/:id', getCategoryByIdController);
 router.post('/categories', createCategoryController);
 router.put('/categories/:id', updateCategoryController);
 router.delete('/categories/:id', deleteCategoryController);
+
+// Families
+router.get('/families', getFamiliesController);
+router.get('/families/category/:categoryId', getFamiliesByCategoryController);
+router.get('/families/:id', getFamilyByIdController);
+router.post('/families', createFamilyController);
+router.put('/families/:id', updateFamilyController);
+router.delete('/families/:id', deleteFamilyController);
 
 // Subfamilies
 router.get('/subfamilies', getSubfamiliesController);
