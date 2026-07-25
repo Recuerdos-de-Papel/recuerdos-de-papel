@@ -11,13 +11,13 @@ export const getProducts = async (
     .from('products')
     .select(`
       *,
-      subfamily:subfamilies(
+      subfamily:subfamilies!inner(
         id,
         name,
-        family:families(
+        family:families!inner(
           id,
           name,
-          category:categories(
+          category:categories!inner(
             id,
             name
           )
@@ -26,19 +26,19 @@ export const getProducts = async (
     `)
     .eq('isActive', true);
 
-  if (filters?.search) {
+  if (filters?.search && filters.search.trim() !== '') {
     query = query.or(`name.ilike.%${filters.search}%,code.ilike.%${filters.search}%`);
   }
 
-  if (filters?.category) {
+  if (filters?.category && filters.category.trim() !== '') {
     query = query.eq('subfamily.family.categoryId', filters.category);
   }
 
-  if (filters?.family) {
-    query = query.eq('subfamily.familyId', filters.family);
+  if (filters?.family && filters.family.trim() !== '') {
+    query = query.eq('subfamily.family.id', filters.family);
   }
 
-  if (filters?.subfamily) {
+  if (filters?.subfamily && filters.subfamily.trim() !== '') {
     query = query.eq('subfamilyId', filters.subfamily);
   }
 
