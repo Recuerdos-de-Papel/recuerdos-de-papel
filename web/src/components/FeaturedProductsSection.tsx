@@ -54,7 +54,18 @@ export default function FeaturedProductsSection() {
               className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow flex flex-col h-full"
             >
               <img
-                src={product.images?.[0]?.url || ''}
+                src={(() => {
+                  if (!product.images) return '';
+                  try {
+                    const parsed = JSON.parse(product.images);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                      return parsed[0]?.url || parsed[0] || '';
+                    }
+                    return typeof parsed === 'string' ? parsed : '';
+                  } catch {
+                    return product.images;
+                  }
+                })()}
                 alt={product.name}
                 className="w-full h-48 object-cover"
               />
@@ -66,7 +77,7 @@ export default function FeaturedProductsSection() {
                   <span className="text-primary-600 font-bold text-xl">
                     ${product.webPrice}
                   </span>
-                  {product.labels?.includes('offer') && (
+                  {product.isOffer && (
                     <span className="text-gray-400 line-through text-sm">
                       ${product.normalPrice}
                     </span>

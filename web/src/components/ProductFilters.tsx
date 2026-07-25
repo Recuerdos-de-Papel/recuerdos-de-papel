@@ -1,27 +1,32 @@
 import { useState, useEffect } from 'react';
-import { getCategories, getSubcategories } from '../services/productService';
-import type { Category, Subcategory } from '../types';
+import { getCategories, getFamiliesByCategory, getSubfamiliesByFamily } from '../services/productService';
+import type { Category, Family, Subfamily } from '../types';
 
 interface ProductFiltersProps {
   onSearch: (search: string) => void;
   onCategoryChange: (category: string) => void;
-  onSubcategoryChange: (subcategory: string) => void;
+  onFamilyChange: (family: string) => void;
+  onSubfamilyChange: (subfamily: string) => void;
   onSortChange: (sort: string) => void;
   selectedCategory: string;
-  selectedSubcategory: string;
+  selectedFamily: string;
+  selectedSubfamily: string;
 }
 
 export default function ProductFilters({
   onSearch,
   onCategoryChange,
-  onSubcategoryChange,
+  onFamilyChange,
+  onSubfamilyChange,
   onSortChange,
   selectedCategory,
-  selectedSubcategory,
+  selectedFamily,
+  selectedSubfamily,
 }: ProductFiltersProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
-  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [families, setFamilies] = useState<Family[]>([]);
+  const [subfamilies, setSubfamilies] = useState<Subfamily[]>([]);
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -36,20 +41,38 @@ export default function ProductFilters({
   }, []);
 
   useEffect(() => {
-    const loadSubcategories = async () => {
+    const loadFamilies = async () => {
       if (selectedCategory) {
         try {
-          const data = await getSubcategories(selectedCategory);
-          setSubcategories(data);
+          const data = await getFamiliesByCategory(selectedCategory);
+          setFamilies(data);
+          setSubfamilies([]);
         } catch (error) {
           // Error handled silently
         }
       } else {
-        setSubcategories([]);
+        setFamilies([]);
+        setSubfamilies([]);
       }
     };
-    loadSubcategories();
+    loadFamilies();
   }, [selectedCategory]);
+
+  useEffect(() => {
+    const loadSubfamilies = async () => {
+      if (selectedFamily) {
+        try {
+          const data = await getSubfamiliesByFamily(selectedFamily);
+          setSubfamilies(data);
+        } catch (error) {
+          // Error handled silently
+        }
+      } else {
+        setSubfamilies([]);
+      }
+    };
+    loadSubfamilies();
+  }, [selectedFamily]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +101,7 @@ export default function ProductFilters({
       </form>
 
       {/* Filtros */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Filtro por categoría */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -88,7 +111,8 @@ export default function ProductFilters({
             value={selectedCategory}
             onChange={(e) => {
               onCategoryChange(e.target.value);
-              onSubcategoryChange('');
+              onFamilyChange('');
+              onSubfamilyChange('');
             }}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
           >
@@ -101,19 +125,42 @@ export default function ProductFilters({
           </select>
         </div>
 
-        {/* Filtro por subcategoría */}
+        {/* Filtro por familia */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Subcategoría
+            Familia
           </label>
           <select
-            value={selectedSubcategory}
-            onChange={(e) => onSubcategoryChange(e.target.value)}
+            value={selectedFamily}
+            onChange={(e) => {
+              onFamilyChange(e.target.value);
+              onSubfamilyChange('');
+            }}
             disabled={!selectedCategory}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100"
           >
-            <option value="">Todas las subcategorías</option>
-            {subcategories.map((sub) => (
+            <option value="">Todas las familias</option>
+            {families.map((fam) => (
+              <option key={fam.id} value={fam.id}>
+                {fam.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Filtro por subfamilia */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Subfamilia
+          </label>
+          <select
+            value={selectedSubfamily}
+            onChange={(e) => onSubfamilyChange(e.target.value)}
+            disabled={!selectedFamily}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 disabled:bg-gray-100"
+          >
+            <option value="">Todas las subfamilias</option>
+            {subfamilies.map((sub) => (
               <option key={sub.id} value={sub.id}>
                 {sub.name}
               </option>
@@ -122,7 +169,7 @@ export default function ProductFilters({
         </div>
 
         {/* Ordenamiento */}
-        <div className="md:col-span-2">
+        <div className="md:col-span-3">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Ordenar por
           </label>

@@ -5,6 +5,19 @@ import { getOrderById, cancelOrder } from '../services/orderService';
 import type { Order, OrderStatus } from '../types';
 import { ORDER_STATUS_LABELS, DELIVERY_METHOD_LABELS } from '../types';
 
+function getProductImage(images: string | undefined): string {
+  if (!images) return '';
+  try {
+    const parsed = JSON.parse(images);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed[0]?.url || parsed[0] || '';
+    }
+    return typeof parsed === 'string' ? parsed : '';
+  } catch {
+    return images;
+  }
+}
+
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -115,13 +128,16 @@ export default function OrderDetail() {
           <div className="space-y-4">
             {order.items.map((item) => (
               <div key={item.id} className="flex gap-4 border-b pb-4 last:border-0">
-                {item.product?.images?.[0] && (
-                  <img 
-                    src={item.product.images[0].url} 
-                    alt={item.product.name}
-                    className="w-20 h-20 object-cover rounded-lg"
-                  />
-                )}
+                {item.product?.images && (() => {
+                  const img = getProductImage(item.product!.images);
+                  return img ? (
+                    <img 
+                      src={img} 
+                      alt={item.product!.name}
+                      className="w-20 h-20 object-cover rounded-lg"
+                    />
+                  ) : null;
+                })()}
                 <div className="flex-1">
                   <h3 className="font-medium text-gray-800">{item.product?.name}</h3>
                   <p className="text-sm text-gray-500">Cantidad: {item.quantity}</p>

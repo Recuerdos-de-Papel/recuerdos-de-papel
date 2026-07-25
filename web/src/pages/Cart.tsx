@@ -2,6 +2,19 @@ import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import type { Product } from '../types';
 
+function getProductImage(product: Product): string {
+  if (!product.images) return '';
+  try {
+    const parsed = JSON.parse(product.images);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed[0]?.url || parsed[0] || '';
+    }
+    return typeof parsed === 'string' ? parsed : '';
+  } catch {
+    return product.images;
+  }
+}
+
 export default function Cart() {
   const {
     items,
@@ -16,7 +29,6 @@ export default function Cart() {
     total,
   } = useCart();
 
-  // Calcular precio efectivo (offerPrice si existe, sino webPrice)
   const getEffectivePrice = (product: Product) => {
     return product.offerPrice ?? product.webPrice;
   };
@@ -44,7 +56,6 @@ export default function Cart() {
         <h1 className="text-3xl font-bold text-gray-800 mb-8">Carrito de Compras</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Lista de productos */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               <table className="w-full">
@@ -69,14 +80,14 @@ export default function Cart() {
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-3">
                             <img
-                              src={product.images?.[0]?.url || ''}
+                              src={getProductImage(product)}
                               alt={product.name}
                               className="w-16 h-16 object-cover rounded"
                             />
                             <div>
                               <h3 className="font-medium text-gray-800">{product.name}</h3>
                               <p className="text-sm text-gray-500">
-                                {product.category?.name} • {product.subcategory?.name}
+                                Subfamilia: {product.subfamily?.name || ''}
                               </p>
                             </div>
                           </div>
@@ -160,7 +171,6 @@ export default function Cart() {
             </div>
           </div>
 
-          {/* Resumen */}
           <div>
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-bold text-gray-800 mb-4">Resumen</h2>

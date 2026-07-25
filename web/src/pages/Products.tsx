@@ -17,7 +17,8 @@ export default function Products() {
   const page = parseInt(searchParams.get('page') || '1', 10);
   const search = searchParams.get('search') || '';
   const category = searchParams.get('categoria') || '';
-  const subcategory = searchParams.get('subcategoria') || '';
+  const family = searchParams.get('familia') || '';
+  const subfamily = searchParams.get('subfamilia') || '';
   const validSortOptions = ['newest', 'price-asc', 'price-desc', 'name-asc'] as const;
   const sortBy = validSortOptions.includes(searchParams.get('sort') as typeof validSortOptions[number]) 
     ? searchParams.get('sort') as 'newest' | 'price-asc' | 'price-desc' | 'name-asc' 
@@ -31,7 +32,8 @@ export default function Products() {
         const result = await getProducts(page, 12, {
           search,
           category,
-          subcategory,
+          family,
+          subfamily,
         });
         setProducts(result.data);
         setTotalPages(result.totalPages);
@@ -43,7 +45,7 @@ export default function Products() {
       }
     };
     loadProducts();
-  }, [page, search, category, subcategory, sortBy]);
+  }, [page, search, category, family, subfamily, sortBy]);
 
   const handleSearch = (searchTerm: string) => {
     const newParams = new URLSearchParams(searchParams);
@@ -55,13 +57,23 @@ export default function Products() {
   const handleCategoryChange = (newCategory: string) => {
     const newParams = new URLSearchParams(searchParams);
     newParams.set('categoria', newCategory);
+    newParams.delete('familia');
+    newParams.delete('subfamilia');
     newParams.set('page', '1');
     setSearchParams(newParams);
   };
 
-  const handleSubcategoryChange = (newSubcategory: string) => {
+  const handleFamilyChange = (newFamily: string) => {
     const newParams = new URLSearchParams(searchParams);
-    newParams.set('subcategoria', newSubcategory);
+    newParams.set('familia', newFamily);
+    newParams.delete('subfamilia');
+    newParams.set('page', '1');
+    setSearchParams(newParams);
+  };
+
+  const handleSubfamilyChange = (newSubfamily: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('subfamilia', newSubfamily);
     newParams.set('page', '1');
     setSearchParams(newParams);
   };
@@ -89,10 +101,12 @@ export default function Products() {
         <ProductFilters
           onSearch={handleSearch}
           onCategoryChange={handleCategoryChange}
-          onSubcategoryChange={handleSubcategoryChange}
+          onFamilyChange={handleFamilyChange}
+          onSubfamilyChange={handleSubfamilyChange}
           onSortChange={handleSortChange}
           selectedCategory={category}
-          selectedSubcategory={subcategory}
+          selectedFamily={family}
+          selectedSubfamily={subfamily}
         />
 
         {loading && (

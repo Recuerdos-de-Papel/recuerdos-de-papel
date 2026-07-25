@@ -1,17 +1,39 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { getProductById, getCategories, getRelatedProducts } from '../services/productService';
-import type { Product, Category } from '../types';
+import { getProductById, getRelatedProducts } from '../services/productService';
+import type { Product } from '../types';
 import ProductCard from '../components/ProductCard';
 import { useCart } from '../context/CartContext';
 
 type DeliveryOption = 'pickup' | 'local' | 'shipping';
 
+function getProductImages(product: Product): string[] {
+  if (!product.images) return [];
+  try {
+    const parsed = JSON.parse(product.images);
+    if (Array.isArray(parsed)) {
+      return parsed.map((item: any) => item?.url || item);
+    }
+    return typeof parsed === 'string' ? [parsed] : [];
+  } catch {
+    return [product.images];
+  }
+}
+
+function hasLabel(product: Product, label: string): boolean {
+  if (!product.labels) return false;
+  try {
+    const parsed = JSON.parse(product.labels);
+    return Array.isArray(parsed) && parsed.includes(label);
+  } catch {
+    return product.labels.includes(label);
+  }
+}
+
 export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
-  const [category, setCategory] = useState<Category | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,11 +53,7 @@ export default function ProductPage() {
         setProduct(productData);
         
         if (productData) {
-          const categories = await getCategories();
-          const foundCategory = categories.find(c => c.id === productData.categoryId);
-          setCategory(foundCategory || null);
-          
-          const related = await getRelatedProducts(productData.categoryId, productData.id);
+          const related = await getRelatedProducts(productData.subfamilyId, productData.id);
           setRelatedProducts(related);
         }
       } catch (err) {
@@ -83,6 +101,9 @@ export default function ProductPage() {
     );
   }
 
+  const productImages = getProductImages(product);
+  const categoryName = product.subfamily?.family?.category?.name || '';
+  const subfamilyName = product.subfamily?.name || '';
   const savings = product.normalPrice - product.webPrice;
   const savingsPercent = product.normalPrice > 0 ? Math.round((savings / product.normalPrice) * 100) : 0;
 
@@ -104,49 +125,49 @@ export default function ProductPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Migas de pan */}
+        {/* Breadcrumbs */}
         <nav className="flex text-sm text-gray-600 mb-6">
           <Link to="/" className="hover:text-primary-600">Inicio</Link>
           <span className="mx-2">/</span>
-          <Link to="/productos" className="hover:text-primary-600">{category?.name || 'Productos'}</Link>
+          <Link to="/productos" className="hover:text-primary-600">{categoryName || 'Productos'}</Link>
           <span className="mx-2">/</span>
-          <span className="text-gray-400">{product.subcategory?.name || ''}</span>
+          <span className="text-gray-400">{subfamilyName}</span>
           <span className="mx-2">/</span>
           <span className="text-gray-800 font-medium">{product.name}</span>
         </nav>
 
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-6">
-            {/* Galería de imágenes */}
+            {/* Image gallery */}
             <div>
               <div className="relative mb-4">
-                {product.images && product.images.length > 0 && (
+                {productImages.length > 0 && (
                   <img
-                    src={product.images[selectedImage]?.url}
+                    src={productImages[selectedImage]}
                     alt={product.name}
                     className="w-full h-96 object-cover rounded-lg"
                   />
                 )}
-                {product.labels?.includes('offer') && (
+                {hasLabel(product, 'offer') && (
                   <span className="absolute top-4 right-4 bg-red-500 text-white text-sm font-bold px-3 py-1 rounded-full">
                     OFERTA
                   </span>
                 )}
               </div>
 
-              {/* Miniaturas */}
-              {product.images && product.images.length > 1 && (
+              {/* Thumbnails */}
+              {productImages.length > 1 && (
                 <div className="flex gap-2 overflow-x-auto">
-                  {product.images.map((img, index) => (
+                  {productImages.map((img, index) => (
                     <button
-                      key={img.id}
+                      key={index}
                       onClick={() => setSelectedImage(index)}
                       className={`border-2 rounded-lg overflow-hidden ${
                         selectedImage === index ? 'border-primary-600' : 'border-gray-200'
                       }`}
                     >
                       <img
-                        src={img.url}
+                        src={img}
                         alt={`${product.name} ${index + 1}`}
                         className="w-20 h-20 object-cover"
                       />
@@ -156,25 +177,25 @@ export default function ProductPage() {
               )}
             </div>
 
-            {/* Información del producto */}
+            {/* Product info */}
             <div>
               <h1 className="text-3xl font-bold text-gray-800 mb-2">{product.name}</h1>
               
               <div className="text-sm text-gray-500 mb-4">
-                <span>{category?.name}</span>
+                <span>{categoryName}</span>
                 <span className="mx-2">•</span>
-                <span>{product.subcategory?.name}</span>
+                <span>{subfamilyName}</span>
                 <span className="mx-2">•</span>
                 <span>Código: {product.code}</span>
               </div>
 
               <p className="text-gray-600 mb-6">{product.description}</p>
 
-              {/* Precios */}
+              {/* Prices */}
               <div className="mb-6">
                 <div className="flex items-center gap-3 mb-2">
                   <span className="text-3xl font-bold text-primary-600">${product.webPrice}</span>
-                  {product.labels?.includes('offer') && (
+                  {hasLabel(product, 'offer') && (
                     <>
                       <span className="text-xl text-gray-400 line-through">${product.normalPrice}</span>
                       <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm font-medium">
@@ -185,7 +206,7 @@ export default function ProductPage() {
                 </div>
               </div>
 
-              {/* Estado */}
+              {/* Status */}
               <div className="mb-4">
                 <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
                   product.status === 'available' ? 'bg-green-100 text-green-800' :
@@ -196,7 +217,7 @@ export default function ProductPage() {
                 </span>
               </div>
 
-              {/* Selector de cantidad */}
+              {/* Quantity selector */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Cantidad
@@ -218,7 +239,7 @@ export default function ProductPage() {
                 </div>
               </div>
 
-              {/* Botones de acción */}
+              {/* Action buttons */}
               <div className="space-y-3 mb-6">
                 <button 
                   onClick={handleAddToCart}
@@ -242,7 +263,7 @@ export default function ProductPage() {
                 </a>
               </div>
 
-              {/* Opciones de entrega */}
+              {/* Delivery options */}
               <div className="mb-6">
                 <h3 className="font-medium text-gray-800 mb-3">¿Cómo querés recibir tu pedido?</h3>
                 <div className="space-y-2">
@@ -266,7 +287,7 @@ export default function ProductPage() {
                 </div>
               </div>
 
-              {/* Tiempo de producción */}
+              {/* Production time */}
               <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
                 <h3 className="font-medium text-primary-800 mb-1">Tiempo estimado de producción</h3>
                 <p className="text-primary-600">{product.productionTime}</p>
@@ -275,34 +296,22 @@ export default function ProductPage() {
           </div>
         </div>
 
-        {/* Características */}
+        {/* Features */}
         <div className="bg-white rounded-lg shadow-md p-6 mt-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Características</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center gap-2">
               <span className="font-medium">Producto personalizado:</span>
-              <span>{product.labels?.includes('custom') ? 'Sí' : 'No'}</span>
+              <span>{hasLabel(product, 'custom') ? 'Sí' : 'No'}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="font-medium">Material:</span>
               <span>{product.brand || 'N/A'}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="font-medium">Medidas:</span>
-              <span>N/A</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-medium">Tipo de impresión:</span>
-              <span>N/A</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-medium">Cuidados:</span>
-              <span>N/A</span>
-            </div>
           </div>
         </div>
 
-        {/* Descripción detallada */}
+        {/* Detailed description */}
         <div className="bg-white rounded-lg shadow-md p-6 mt-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Descripción detallada</h2>
           <p className="text-gray-600 leading-relaxed">
@@ -312,7 +321,7 @@ export default function ProductPage() {
           </p>
         </div>
 
-        {/* Productos relacionados */}
+        {/* Related products */}
         {relatedProducts.length > 0 && (
           <div className="mt-12">
             <h2 className="text-2xl font-bold text-gray-800 mb-6">Productos relacionados</h2>

@@ -1,17 +1,18 @@
 // Servicios
 export * from './authService';
 export * from './categoryService';
-export * from './subcategoryService';
 export { 
   getProducts, 
   getProductById, 
   getProductBySlug, 
   getRelatedProducts,
+  getCategories,
+  getFamiliesByCategory,
+  getSubfamiliesByFamily,
   createProduct,
   updateProduct,
   deleteProduct
 } from './productService';
-export * from './productImageService';
 export * from './promotionService';
 export * from './orderService';
 export * from './favoriteService';

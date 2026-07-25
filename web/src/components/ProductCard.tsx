@@ -6,6 +6,29 @@ interface ProductCardProps {
   product: Product;
 }
 
+function getProductImage(product: Product): string {
+  if (!product.images) return '';
+  try {
+    const parsed = JSON.parse(product.images);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed[0]?.url || parsed[0] || '';
+    }
+    return typeof parsed === 'string' ? parsed : '';
+  } catch {
+    return product.images;
+  }
+}
+
+function hasLabel(product: Product, label: string): boolean {
+  if (!product.labels) return false;
+  try {
+    const parsed = JSON.parse(product.labels);
+    return Array.isArray(parsed) && parsed.includes(label);
+  } catch {
+    return product.labels.includes(label);
+  }
+}
+
 export default function ProductCard({ product }: ProductCardProps) {
   const { addItem } = useCart();
 
@@ -13,10 +36,9 @@ export default function ProductCard({ product }: ProductCardProps) {
     addItem(product, 1);
   };
 
-  const primaryImage = product.images?.find(img => img.isPrimary)?.url || product.images?.[0]?.url || '';
-
-  const effectivePrice = product.offerPrice ?? product.webPrice;
-  const hasOffer = product.offerPrice !== undefined && product.offerPrice < product.webPrice;
+  const primaryImage = getProductImage(product);
+  const categoryName = product.subfamily?.family?.category?.name || '';
+  const subfamilyName = product.subfamily?.name || '';
 
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow flex flex-col h-full">
@@ -26,7 +48,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           alt={product.name}
           className="w-full h-48 object-cover"
         />
-        {product.labels?.includes('offer') && (
+        {hasLabel(product, 'offer') && (
           <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
             OFERTA
           </span>
@@ -39,18 +61,17 @@ export default function ProductCard({ product }: ProductCardProps) {
         </h3>
         
         <div className="text-sm text-gray-500 mb-2">
-          <span>{product.category?.name || ''}</span>
-          <span className="mx-1">•</span>
-          <span>{product.subcategory?.name || ''}</span>
+          <span>{categoryName}</span>
+          {subfamilyName && <><span className="mx-1">•</span><span>{subfamilyName}</span></>}
         </div>
         
         <div className="flex items-center gap-2 mb-4">
           <span className="text-primary-600 font-bold text-xl">
-            ${effectivePrice}
+            ${product.webPrice}
           </span>
-          {hasOffer && (
+          {hasLabel(product, 'offer') && (
             <span className="text-gray-400 line-through text-sm">
-              ${product.webPrice}
+              ${product.normalPrice}
             </span>
           )}
         </div>

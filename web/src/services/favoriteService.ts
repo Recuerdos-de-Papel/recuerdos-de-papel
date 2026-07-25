@@ -8,7 +8,7 @@ export const getFavorites = async (userId: string) => {
       *,
       product:products(*)
     `)
-    .eq('user_id', userId);
+    .eq('userId', userId);
 
   if (error) throw error;
   return data as Favorite[];
@@ -17,7 +17,7 @@ export const getFavorites = async (userId: string) => {
 export const addToFavorites = async (userId: string, productId: string) => {
   const { data, error } = await supabase
     .from('favorites')
-    .insert([{ user_id: userId, product_id: productId }])
+    .insert([{ userId, productId }])
     .select()
     .single();
 
@@ -38,8 +38,8 @@ export const isFavorite = async (userId: string, productId: string) => {
   const { data, error } = await supabase
     .from('favorites')
     .select('id')
-    .eq('user_id', userId)
-    .eq('product_id', productId)
+    .eq('userId', userId)
+    .eq('productId', productId)
     .single();
 
   if (error) return false;
@@ -50,8 +50,8 @@ export const removeFavoriteByProduct = async (userId: string, productId: string)
   const { error } = await supabase
     .from('favorites')
     .delete()
-    .eq('user_id', userId)
-    .eq('product_id', productId);
+    .eq('userId', userId)
+    .eq('productId', productId);
 
   if (error) throw error;
 };

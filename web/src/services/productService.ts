@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import type { Product, Category, Subcategory, ProductFilters, PaginatedResponse } from '../types';
+import type { Product, Category, Family, Subfamily, ProductFilters, PaginatedResponse } from '../types';
 
 // Obtener productos activos con filtros
 export const getProducts = async (
@@ -9,7 +9,21 @@ export const getProducts = async (
 ): Promise<PaginatedResponse<Product>> => {
   let query = supabase
     .from('products')
-    .select(`*, category:categories(*), subcategory:subcategories(*), images:product_images(*)`)
+    .select(`
+      *,
+      subfamily:subfamilies(
+        id,
+        name,
+        family:families(
+          id,
+          name,
+          category:categories(
+            id,
+            name
+          )
+        )
+      )
+    `)
     .eq('isActive', true);
 
   if (filters?.search) {
@@ -17,11 +31,15 @@ export const getProducts = async (
   }
 
   if (filters?.category) {
-    query = query.eq('categoryId', filters.category);
+    query = query.eq('subfamily.family.categoryId', filters.category);
   }
 
-  if (filters?.subcategory) {
-    query = query.eq('subcategoryId', filters.subcategory);
+  if (filters?.family) {
+    query = query.eq('subfamily.familyId', filters.family);
+  }
+
+  if (filters?.subfamily) {
+    query = query.eq('subfamilyId', filters.subfamily);
   }
 
   if (filters?.isFeatured !== undefined) {
@@ -29,7 +47,7 @@ export const getProducts = async (
   }
 
   if (filters?.isOffer !== undefined) {
-    query = query.eq('labels', 'offer');
+    query = query.eq('isOffer', filters.isOffer);
   }
 
   if (filters?.minPrice !== undefined) {
@@ -60,7 +78,21 @@ export const getProducts = async (
 export const getProductById = async (id: string): Promise<Product | null> => {
   const { data, error } = await supabase
     .from('products')
-    .select(`*, category:categories(*), subcategory:subcategories(*), images:product_images(*)`)
+    .select(`
+      *,
+      subfamily:subfamilies(
+        id,
+        name,
+        family:families(
+          id,
+          name,
+          category:categories(
+            id,
+            name
+          )
+        )
+      )
+    `)
     .eq('id', id)
     .eq('isActive', true)
     .single();
@@ -73,7 +105,21 @@ export const getProductById = async (id: string): Promise<Product | null> => {
 export const getProductBySlug = async (slug: string): Promise<Product | null> => {
   const { data, error } = await supabase
     .from('products')
-    .select(`*, category:categories(*), subcategory:subcategories(*), images:product_images(*)`)
+    .select(`
+      *,
+      subfamily:subfamilies(
+        id,
+        name,
+        family:families(
+          id,
+          name,
+          category:categories(
+            id,
+            name
+          )
+        )
+      )
+    `)
     .eq('slug', slug)
     .eq('isActive', true)
     .single();
@@ -82,7 +128,7 @@ export const getProductBySlug = async (slug: string): Promise<Product | null> =>
   return data as Product;
 };
 
-// Obtener categorías
+// Obtener categorías activas
 export const getCategories = async (): Promise<Category[]> => {
   const { data, error } = await supabase
     .from('categories')
@@ -94,10 +140,10 @@ export const getCategories = async (): Promise<Category[]> => {
   return data as Category[];
 };
 
-// Obtener subcategorías
-export const getSubcategories = async (categoryId?: string): Promise<Subcategory[]> => {
+// Obtener familias por categoría
+export const getFamiliesByCategory = async (categoryId: string): Promise<Family[]> => {
   let query = supabase
-    .from('subcategories')
+    .from('families')
     .select('*')
     .eq('isActive', true)
     .order('order', { ascending: true });
@@ -109,19 +155,51 @@ export const getSubcategories = async (categoryId?: string): Promise<Subcategory
   const { data, error } = await query;
 
   if (error) throw error;
-  return data as Subcategory[];
+  return data as Family[];
+};
+
+// Obtener subfamilias por familia
+export const getSubfamiliesByFamily = async (familyId: string): Promise<Subfamily[]> => {
+  let query = supabase
+    .from('subfamilies')
+    .select('*')
+    .eq('isActive', true)
+    .order('order', { ascending: true });
+
+  if (familyId) {
+    query = query.eq('familyId', familyId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) throw error;
+  return data as Subfamily[];
 };
 
 // Obtener productos relacionados
 export const getRelatedProducts = async (
-  categoryId: string,
+  subfamilyId: string,
   excludeId: string,
   limit = 8
 ): Promise<Product[]> => {
   const { data, error } = await supabase
     .from('products')
-    .select(`*, category:categories(*), subcategory:subcategories(*), images:product_images(*)`)
-    .eq('categoryId', categoryId)
+    .select(`
+      *,
+      subfamily:subfamilies(
+        id,
+        name,
+        family:families(
+          id,
+          name,
+          category:categories(
+            id,
+            name
+          )
+        )
+      )
+    `)
+    .eq('subfamilyId', subfamilyId)
     .eq('isActive', true)
     .neq('id', excludeId)
     .order('createdAt', { ascending: false })
@@ -156,11 +234,11 @@ export const updateProduct = async (id: string, updates: Partial<Product>): Prom
   return data as Product;
 };
 
-// Eliminar producto
+// Eliminar producto (borrado lógico)
 export const deleteProduct = async (id: string): Promise<void> => {
   const { error } = await supabase
     .from('products')
-    .delete()
+    .update({ deletedAt: new Date().toISOString(), isActive: false })
     .eq('id', id);
 
   if (error) throw error;

@@ -48,10 +48,11 @@ export interface Family {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  category?: Category;
 }
 
-// Subcategoría
-export interface Subcategory {
+// Subfamilia (reemplaza Subcategory)
+export interface Subfamily {
   id: string;
   familyId: string;
   name: string;
@@ -60,24 +61,13 @@ export interface Subcategory {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-}
-
-// Imagen de producto
-export interface ProductImage {
-  id: string;
-  productId: string;
-  url: string;
-  isPrimary: boolean;
-  order: number;
-  createdAt: string;
+  family?: Family;
 }
 
 // Producto
 export interface Product {
   id: string;
   subfamilyId: string;
-  categoryId: string;
-  subcategoryId: string;
   name: string;
   slug: string;
   code?: string;
@@ -93,16 +83,17 @@ export interface Product {
   isNew: boolean;
   productionTime?: string;
   displayOrder: number;
-  labels?: string;
+  labels?: string; // JSON array como string
+  images?: string; // JSON array como string en Prisma
+  features?: string; // JSON object como string
+  isOffer: boolean;
   isActive: boolean;
   stock: number;
   deletedAt?: string;
-  images?: ProductImage[];
-  category?: Category;
-  subcategory?: Subcategory;
   brand?: string;
   createdAt: string;
   updatedAt: string;
+  subfamily?: Subfamily;
 }
 
 // Usuario
@@ -246,7 +237,8 @@ export interface PaginatedResponse<T> {
 export interface ProductFilters {
   search?: string;
   category?: string;
-  subcategory?: string;
+  family?: string;
+  subfamily?: string;
   isActive?: boolean;
   isFeatured?: boolean;
   isOffer?: boolean;
