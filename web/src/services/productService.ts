@@ -7,17 +7,24 @@ export const getProducts = async (
   limit = 12,
   filters?: ProductFilters
 ): Promise<PaginatedResponse<Product>> => {
-  let query = supabase
+  // Build base query for count
+  let countQuery = supabase
+    .from('products')
+    .select('*', { count: 'exact', head: true })
+    .eq('isActive', true);
+
+  // Build data query
+  let dataQuery = supabase
     .from('products')
     .select(`
       *,
-      subfamily:subfamilies!inner(
+      subfamily:subfamilies(
         id,
         name,
-        family:families!inner(
+        family:families(
           id,
           name,
-          category:categories!inner(
+          category:categories(
             id,
             name
           )
@@ -27,38 +34,52 @@ export const getProducts = async (
     .eq('isActive', true);
 
   if (filters?.search && filters.search.trim() !== '') {
-    query = query.or(`name.ilike.%${filters.search}%,code.ilike.%${filters.search}%`);
+    const searchFilter = `name.ilike.%${filters.search}%,code.ilike.%${filters.search}%`;
+    countQuery = countQuery.or(searchFilter);
+    dataQuery = dataQuery.or(searchFilter);
   }
 
   if (filters?.category && filters.category.trim() !== '') {
-    query = query.eq('subfamily.family.categoryId', filters.category);
+    countQuery = countQuery.eq('subfamily.family.categoryId', filters.category);
+    dataQuery = dataQuery.eq('subfamily.family.categoryId', filters.category);
   }
 
   if (filters?.family && filters.family.trim() !== '') {
-    query = query.eq('subfamily.family.id', filters.family);
+    countQuery = countQuery.eq('subfamily.family.id', filters.family);
+    dataQuery = dataQuery.eq('subfamily.family.id', filters.family);
   }
 
   if (filters?.subfamily && filters.subfamily.trim() !== '') {
-    query = query.eq('subfamilyId', filters.subfamily);
+    countQuery = countQuery.eq('subfamilyId', filters.subfamily);
+    dataQuery = dataQuery.eq('subfamilyId', filters.subfamily);
   }
 
   if (filters?.isFeatured !== undefined) {
-    query = query.eq('isFeatured', filters.isFeatured);
+    countQuery = countQuery.eq('isFeatured', filters.isFeatured);
+    dataQuery = dataQuery.eq('isFeatured', filters.isFeatured);
   }
 
   if (filters?.isOffer !== undefined) {
-    query = query.eq('isOffer', filters.isOffer);
+    countQuery = countQuery.eq('isOffer', filters.isOffer);
+    dataQuery = dataQuery.eq('isOffer', filters.isOffer);
   }
 
   if (filters?.minPrice !== undefined) {
-    query = query.gte('webPrice', filters.minPrice);
+    countQuery = countQuery.gte('webPrice', filters.minPrice);
+    dataQuery = dataQuery.gte('webPrice', filters.minPrice);
   }
 
   if (filters?.maxPrice !== undefined) {
-    query = query.lte('webPrice', filters.maxPrice);
+    countQuery = countQuery.lte('webPrice', filters.maxPrice);
+    dataQuery = dataQuery.lte('webPrice', filters.maxPrice);
   }
 
-  const { data, error, count } = await query
+  // Execute count query
+  const { count, error: countError } = await countQuery;
+  if (countError) throw countError;
+
+  // Execute data query with pagination
+  const { data, error } = await dataQuery
     .order('displayOrder', { ascending: false })
     .order('createdAt', { ascending: false })
     .range((page - 1) * limit, page * limit - 1);

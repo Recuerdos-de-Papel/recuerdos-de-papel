@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -89,11 +90,65 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
     final pickedFiles = await picker.pickMultiImage();
 
     if (pickedFiles.isNotEmpty) {
-      // NOTA: En producción, aquí se debería subir cada imagen al servidor
-      // y guardar la URL. Por ahora se guarda la ruta local como placeholder.
-      setState(() {
-        _images.addAll(pickedFiles.map((e) => e.path).toList());
-      });
+      setState(() => _isLoading = true);
+
+      try {
+        final apiClient = ref.read(apiClientProvider);
+        final uploadedUrls = <String>[];
+
+        for (final pickedFile in pickedFiles) {
+          final file = await pickedFile.readAsBytes();
+          final fileName = pickedFile.name;
+          final mimeType = _getMimeType(fileName);
+
+          final formData = FormData.fromMap({
+            'images': MultipartFile.fromBytes(file, filename: fileName, contentType: DioMediaType.parse(mimeType)),
+          });
+
+          final response = await apiClient.dio.post(
+            '/upload/product-images',
+            data: formData,
+            options: Options(
+              headers: {'Content-Type': 'multipart/form-data'},
+            ),
+          );
+
+          if (response.data['urls'] != null) {
+            uploadedUrls.addAll(List<String>.from(response.data['urls']));
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            _images.addAll(uploadedUrls);
+            _isLoading = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error al subir imágenes: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  String _getMimeType(String fileName) {
+    final ext = fileName.split('.').last.toLowerCase();
+    switch (ext) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return 'image/jpeg';
     }
   }
 

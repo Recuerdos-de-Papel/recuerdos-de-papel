@@ -28,13 +28,17 @@ export default function ProductFilters({
   const [families, setFamilies] = useState<Family[]>([]);
   const [subfamilies, setSubfamilies] = useState<Subfamily[]>([]);
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     const loadCategories = async () => {
       try {
+        setError(null);
         const data = await getCategories();
         setCategories(data);
-      } catch (error) {
-        // Error handled silently
+      } catch (err) {
+        setError('Error al cargar categorías');
+        console.error('Error loading categories:', err);
       }
     };
     loadCategories();
@@ -44,11 +48,13 @@ export default function ProductFilters({
     const loadFamilies = async () => {
       if (selectedCategory) {
         try {
+          setError(null);
           const data = await getFamiliesByCategory(selectedCategory);
           setFamilies(data);
           setSubfamilies([]);
-        } catch (error) {
-          // Error handled silently
+        } catch (err) {
+          setError('Error al cargar familias');
+          console.error('Error loading families:', err);
         }
       } else {
         setFamilies([]);
@@ -62,10 +68,12 @@ export default function ProductFilters({
     const loadSubfamilies = async () => {
       if (selectedFamily) {
         try {
+          setError(null);
           const data = await getSubfamiliesByFamily(selectedFamily);
           setSubfamilies(data);
-        } catch (error) {
-          // Error handled silently
+        } catch (err) {
+          setError('Error al cargar subfamilias');
+          console.error('Error loading subfamilies:', err);
         }
       } else {
         setSubfamilies([]);
@@ -81,6 +89,11 @@ export default function ProductFilters({
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          {error}
+        </div>
+      )}
       {/* Buscador */}
       <form onSubmit={handleSearch} className="mb-6">
         <div className="flex gap-2">

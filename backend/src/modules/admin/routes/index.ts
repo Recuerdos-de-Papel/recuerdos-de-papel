@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { adminAuth } from '../middlewares/adminAuth';
 import {
   getProductsController,
@@ -67,8 +68,21 @@ import {
   registerAdminController,
   profileController,
 } from '../controllers/authController';
+import {
+  uploadProductImagesController,
+  uploadFlyerImageController,
+} from '../controllers/uploadController';
 
 const router = Router();
+
+// Multer configuration for file uploads (max 10 files, 10MB each)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+    files: 10,
+  },
+});
 
 // Auth routes (no auth required)
 router.post('/auth/login', loginController);
@@ -141,5 +155,9 @@ router.put('/settings/:key', updateSettingController);
 router.get('/statistics/sales', getSalesStatsController);
 router.get('/statistics/top-products', getTopProductsController);
 router.get('/statistics/top-categories', getTopCategoriesController);
+
+// Upload endpoints (protected)
+router.post('/upload/product-images', upload.array('images', 10), uploadProductImagesController);
+router.post('/upload/flyer-image', upload.single('image'), uploadFlyerImageController);
 
 export default router;
