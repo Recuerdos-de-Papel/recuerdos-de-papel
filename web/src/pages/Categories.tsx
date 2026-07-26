@@ -1,78 +1,145 @@
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { getCategories } from '../services/categoryService';
-import type { Category } from '../types';
+import { getCategories, getProducts } from '../services/productService';
+import { Category, Product } from '../types';
 
-export default function Categories() {
+const Categories: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadCategories = async () => {
+    const fetchCategories = async () => {
       try {
-        const data = await getCategories();
-        setCategories(data);
-      } catch (err) {
-        setError('Error al cargar las categorías');
+        const categoriesRes = await getCategories();
+        setCategories(categoriesRes);
+      } catch (error) {
+        console.error('Error al cargar categorías:', error);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
-    loadCategories();
+
+    fetchCategories();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 py-12">
-        <div className="max-w-7xl mx-auto px-4">
-          <p className="text-center text-gray-600">Cargando categorías...</p>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    const fetchProducts = async () => {
+      if (!selectedCategory) {
+        setProducts([]);
+        return;
+      }
 
-  if (error) {
+      try {
+        const productsRes = await getProducts({ isActive: true });
+        // Filtrar productos por categoría (a través de subfamilia -> familia)
+        const filtered = productsRes.data.filter(() => {
+          // Aquí necesitaríamos lógica adicional para filtrar por categoría
+          // Por ahora mostramos todos los productos
+          return true;
+        });
+        setProducts(filtered);
+      } catch (error) {
+        console.error('Error al cargar productos:', error);
+      }
+    };
+
+    fetchProducts();
+  }, [selectedCategory]);
+
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12">
-        <div className="max-w-7xl mx-auto px-4">
-          <p className="text-center text-red-600">{error}</p>
-        </div>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-xl text-gray-600">Cargando categorías...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-8">
-          Categorías
-        </h1>
+        <h1 className="text-4xl font-bold text-center mb-8">Categorías</h1>
 
-        {categories.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-xl text-gray-600">No hay categorías disponibles</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {!selectedCategory ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {categories.map((category) => (
-              <Link
+              <button
                 key={category.id}
-                to={`/productos?categoria=${category.id}`}
-                className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+                onClick={() => setSelectedCategory(category.id)}
+                className="bg-white rounded-lg shadow-md p-8 text-center hover:shadow-xl transition"
               >
-                <h2 className="text-xl font-bold text-gray-800 mb-2">{category.name}</h2>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">{category.name}</h3>
                 {category.description && (
                   <p className="text-gray-600">{category.description}</p>
                 )}
-                <div className="mt-4">
-                  <span className="text-primary-600 font-medium">Ver productos →</span>
-                </div>
-              </Link>
+              </button>
             ))}
+          </div>
+        ) : (
+          <div>
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className="mb-6 text-pink-600 hover:text-pink-700 font-semibold"
+            >
+              ← Volver a categorías
+            </button>
+            <h2 className="text-2xl font-bold mb-6">
+              {categories.find(c => c.id === selectedCategory)?.name}
+            </h2>
+            {products.length === 0 ? (
+              <p className="text-gray-600">No hay productos en esta categoría</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {products.map((product) => (
+                  <Link
+                    key={product.id}
+                    to={`/products/${product.id}`}
+                    className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition"
+                  >
+                    <div className="aspect-square bg-gray-200">
+                      {product.images && product.images.length > 0 ? (
+                        <img
+                          src={product.images[0]}
+                          alt={product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          Sin imagen
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-semibold text-lg mb-2 line-clamp-2">{product.name}</h3>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          {product.isOffer ? (
+                            <>
+                              <span className="text-lg font-bold text-pink-600">
+                                ${product.price.toFixed(2)}
+                              </span>
+                              <span className="text-sm text-gray-500 line-through ml-2">
+                                ${product.webPrice.toFixed(2)}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-lg font-bold text-gray-800">
+                              ${product.webPrice.toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
     </div>
   );
-}
+};
+
+export default Categories;

@@ -15,9 +15,11 @@ export const addToFavorites = async (userId: string, productId: string) => {
   });
 };
 
-export const removeFromFavorites = async (id: string) => {
-  return prisma.favorite.delete({
-    where: { id },
+// Elimina un favorito por userId y productId (no por id del favorito)
+// Esto permite que el endpoint DELETE /api/favorites/:productId funcione
+export const removeFromFavorites = async (userId: string, productId: string) => {
+  return prisma.favorite.deleteMany({
+    where: { userId, productId },
   });
 };
 

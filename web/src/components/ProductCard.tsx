@@ -1,107 +1,89 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
-import type { Product } from '../types';
 import { useCart } from '../context/CartContext';
+import { Product } from '../types';
 
 interface ProductCardProps {
   product: Product;
 }
 
-function getProductImage(product: Product): string {
-  if (!product.images) return '';
-  try {
-    const parsed = JSON.parse(product.images);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      const firstImage = parsed[0];
-      if (typeof firstImage === 'string') {
-        // Si es un string, puede ser un nombre de archivo o una URL completa
-        if (firstImage.startsWith('http')) {
-          return firstImage;
-        }
-        // Construir URL de Supabase Storage
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const bucketName = 'product-images'; // Nombre del bucket en Supabase
-        return `${supabaseUrl}/storage/v1/object/public/${bucketName}/${firstImage}`;
-      }
-      return firstImage?.url || '';
-    }
-    return typeof parsed === 'string' ? parsed : '';
-  } catch {
-    return product.images;
-  }
-}
+const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+  const { addToCart } = useCart();
 
-function hasLabel(product: Product, label: string): boolean {
-  if (!product.labels) return false;
-  try {
-    const parsed = JSON.parse(product.labels);
-    return Array.isArray(parsed) && parsed.includes(label);
-  } catch {
-    return product.labels.includes(label);
-  }
-}
-
-export default function ProductCard({ product }: ProductCardProps) {
-  const { addItem } = useCart();
-
-  const handleAddToCart = () => {
-    addItem(product, 1);
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addToCart(product, 1);
   };
 
-  const primaryImage = getProductImage(product);
-  const categoryName = product.subfamily?.family?.category?.name || '';
-  const subfamilyName = product.subfamily?.name || '';
+  const price = product.isOffer ? product.price : product.webPrice;
 
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow flex flex-col h-full">
-      <div className="relative">
-        <img
-          src={primaryImage}
-          alt={product.name}
-          className="w-full h-48 object-cover"
-        />
-        {hasLabel(product, 'offer') && (
-          <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
+    <Link
+      to={`/products/${product.id}`}
+      className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition block"
+    >
+      <div className="aspect-square bg-gray-200 relative">
+        {product.images && product.images.length > 0 ? (
+          <img
+            src={product.images[0]}
+            alt={product.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-400">
+            Sin imagen
+          </div>
+        )}
+        {product.isOffer && (
+          <div className="absolute top-2 right-2 bg-pink-600 text-white px-2 py-1 rounded text-sm font-semibold">
             OFERTA
-          </span>
+          </div>
         )}
       </div>
-      
-      <div className="p-4 flex flex-col flex-grow">
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">
-          {product.name}
-        </h3>
-        
-        <div className="text-sm text-gray-500 mb-2">
-          <span>{categoryName}</span>
-          {subfamilyName && <><span className="mx-1">•</span><span>{subfamilyName}</span></>}
+      <div className="p-4">
+        <h3 className="font-semibold text-lg mb-2 line-clamp-2">{product.name}</h3>
+        {product.description && (
+          <p className="text-gray-600 text-sm mb-2 line-clamp-2">
+            {product.description}
+          </p>
+        )}
+        <div className="flex items-center justify-between">
+          <div>
+            {product.isOffer ? (
+              <>
+                <span className="text-lg font-bold text-pink-600">
+                  ${price.toFixed(2)}
+                </span>
+                <span className="text-sm text-gray-500 line-through ml-2">
+                  ${product.webPrice.toFixed(2)}
+                </span>
+              </>
+            ) : (
+              <span className="text-lg font-bold text-gray-800">
+                ${price.toFixed(2)}
+              </span>
+            )}
+          </div>
         </div>
-        
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-primary-600 font-bold text-xl">
-            ${product.webPrice}
-          </span>
-          {hasLabel(product, 'offer') && (
-            <span className="text-gray-400 line-through text-sm">
-              ${product.normalPrice}
-            </span>
-          )}
-        </div>
-        
-        <div className="mt-auto space-y-2">
+        {product.stock === 0 ? (
+          <button
+            disabled
+            className="w-full mt-3 bg-gray-300 text-gray-500 py-2 rounded-full font-semibold cursor-not-allowed"
+          >
+            Sin stock
+          </button>
+        ) : (
           <button
             onClick={handleAddToCart}
-            className="w-full text-center bg-primary-600 text-white py-2 rounded-lg hover:bg-primary-700 transition-colors"
+            className="w-full mt-3 bg-pink-600 text-white py-2 rounded-full font-semibold hover:bg-pink-700 transition"
           >
-            Agregar al Carrito
+            Agregar al carrito
           </button>
-          <Link
-            to={`/producto/${product.id}`}
-            className="w-full text-center block bg-gray-100 text-gray-800 py-2 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            Ver Producto
-          </Link>
-        </div>
+        )}
       </div>
-    </div>
+    </Link>
   );
-}
+};
+
+export default ProductCard;

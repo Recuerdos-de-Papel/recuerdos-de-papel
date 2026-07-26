@@ -1,89 +1,35 @@
-import { supabase } from '../lib/supabase';
+import { apiClient } from '../api/client';
+import { User, LoginRequest, RegisterRequest, AuthResponse } from '../types';
 
-export const loginWithEmail = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-
-  if (error) throw error;
-  return data;
+// Login
+export const login = async (credentials: LoginRequest): Promise<AuthResponse> => {
+  try {
+    const response = await apiClient.post<AuthResponse>('/auth/login', credentials);
+    return response.data;
+  } catch (error) {
+    console.error('Error en login:', error);
+    throw error;
+  }
 };
 
-export const loginWithGoogle = async () => {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `${window.location.origin}/mi-cuenta`,
-    },
-  });
-
-  if (error) throw error;
-  return data;
+// Registro
+export const register = async (data: RegisterRequest): Promise<AuthResponse> => {
+  try {
+    const response = await apiClient.post<AuthResponse>('/auth/register', data);
+    return response.data;
+  } catch (error) {
+    console.error('Error en registro:', error);
+    throw error;
+  }
 };
 
-export const registerWithEmail = async (email: string, password: string, userData: { name: string; phone?: string }) => {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: userData,
-    },
-  });
-
-  if (error) throw error;
-  return data;
+// Obtener perfil
+export const getProfile = async (): Promise<User> => {
+  try {
+    const response = await apiClient.get<User>('/auth/profile');
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener perfil:', error);
+    throw error;
+  }
 };
-
-export const logout = async () => {
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
-};
-
-export const resetPassword = async (email: string) => {
-  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/recuperar-password`,
-  });
-
-  if (error) throw error;
-  return data;
-};
-
-export const updatePassword = async (password: string) => {
-  const { data, error } = await supabase.auth.updateUser({
-    password,
-  });
-
-  if (error) throw error;
-  return data;
-};
-
-export const updateUserProfile = async (updates: { name?: string; phone?: string; avatar?: string }) => {
-  const { data, error } = await supabase.auth.updateUser({
-    data: updates,
-  });
-
-  if (error) throw error;
-  return data;
-};
-
-export const getCurrentUser = () => {
-  return supabase.auth.getUser();
-};
-
-export const getSession = () => {
-  return supabase.auth.getSession();
-};
-
-export const onAuthStateChange = (callback: (event: string, session: Session | null) => void) => {
-  return supabase.auth.onAuthStateChange(callback);
-};
-
-interface Session {
-  user: {
-    id: string;
-    email?: string;
-  } | null;
-  access_token: string;
-  refresh_token: string;
-}

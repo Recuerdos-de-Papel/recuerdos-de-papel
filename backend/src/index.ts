@@ -12,11 +12,11 @@ import { errorHandler } from './middlewares/errorHandler';
 import { logger } from './utils/logger';
 import orderRoutes from './routes/orderRoutes';
 import authRoutes from './routes/authRoutes';
+import publicRoutes from './routes/publicRoutes';
+import favoriteRoutes from './routes/favoriteRoutes';
+import addressRoutes from './routes/addressRoutes';
 import MercadoPagoRoutes from './modules/mercadopago/routes/MercadoPagoRoutes';
 import { adminRoutes } from './modules/admin';
-
-// Import routes (se agregarán en próximos pasos)
-// import productRoutes from './routes/products';
 
 dotenv.config();
 
@@ -246,6 +246,13 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/payments', MercadoPagoRoutes);
 app.use('/api/admin', adminLimiter, adminRoutes);
 
+// Public routes (web)
+app.use('/api', publicRoutes);
+
+// Authenticated routes (client)
+app.use('/api/favorites', favoriteRoutes);
+app.use('/api/addresses', addressRoutes);
+
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });
@@ -257,7 +264,7 @@ app.use(errorHandler);
 const startServer = async () => {
   try {
     await connectDatabase();
-    
+
     app.listen(env.PORT, () => {
       logger.info(`Servidor corriendo en puerto ${env.PORT}`);
       logger.info(`Ambiente: ${env.NODE_ENV}`);

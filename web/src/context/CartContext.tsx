@@ -1,127 +1,92 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import type { Product } from '../types';
-
-interface CartItem {
-  product: Product;
-  quantity: number;
-}
+import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { CartItem, Product } from '../types';
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (product: Product, quantity?: number) => void;
-  removeItem: (productId: string) => void;
+  addToCart: (product: Product, quantity?: number) => void;
+  removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
-  totalItems: number;
-  subtotal: number;
-  webDiscount: number;
-  offerDiscount: number;
-  totalSaved: number;
-  total: number;
-  shippingCost: number;
-  finalTotal: number;
-  setShippingCost: (cost: number) => void;
+  getTotal: () => number;
+  getItemCount: () => number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export const useCart = () => {
-  const context = useContext(CartContext);
-  if (!context) {
-    throw new Error('useCart must be used within a CartProvider');
-  }
-  return context;
-};
-
-export const CartProvider = ({ children }: { children: ReactNode }) => {
+export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
-  const [shippingCost, setShippingCost] = useState(0);
 
-  // Cargar carrito desde localStorage
-  useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      setItems(JSON.parse(savedCart));
-    }
-  }, []);
-
-  // Guardar carrito en localStorage
-  useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(items));
-  }, [items]);
-
-  const addItem = (product: Product, quantity = 1) => {
-    setItems((prev) => {
-      const existing = prev.find((i) => i.product.id === product.id);
-      if (existing) {
-        return prev.map((i) =>
-          i.product.id === product.id
-            ? { ...i, quantity: i.quantity + quantity }
-            : i
+  // Agregar producto al carrito
+  const addToCart = (product: Product, quantity: number = 1) => {
+    setItems((currentItems) => {
+      const existingItem = currentItems.find((item) => item.product.id === product.id);
+      
+      if (existingItem) {
+        return currentItems.map((item) =>
+          item.product.id === product.id
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
         );
       }
-      return [...prev, { product, quantity }];
+      
+      return [...currentItems, { product, quantity }];
     });
   };
 
-  const removeItem = (productId: string) => {
-    setItems((prev) => prev.filter((i) => i.product.id !== productId));
+  // Eliminar producto del carrito
+  const removeFromCart = (productId: string) => {
+    setItems((currentItems) => currentItems.filter((item) => item.product.id !== productId));
   };
 
+  // Actualizar cantidad
   const updateQuantity = (productId: string, quantity: number) => {
-    if (quantity < 1) {
+    if (quantity <= 0) {
+      removeFromCart(productId);
       return;
     }
-    setItems((prev) =>
-      prev.map((i) =>
-        i.product.id === productId ? { ...i, quantity } : i
+
+    setItems((currentItems) =>
+      currentItems.map((item) =>
+        item.product.id === productId ? { ...item, quantity } : item
       )
     );
   };
 
+  // Limpiar carrito
   const clearCart = () => {
     setItems([]);
   };
 
-  // Calcular precio efectivo (offerPrice si existe, sino webPrice)
-  const getEffectivePrice = (product: Product) => {
-    return product.offerPrice ?? product.webPrice;
+  // Calcular total
+  const getTotal = (): number => {
+    return items.reduce((total, item) => {
+      const price = item.product.isOffer ? item.product.price : item.product.webPrice;
+      return total + price * item.quantity;
+    }, 0);
   };
 
-  const totalItems = items.reduce((sum, i) => sum + i.quantity, 0);
-  const subtotal = items.reduce((sum, i) => sum + i.product.normalPrice * i.quantity, 0);
-  const webDiscount = items.reduce(
-    (sum, i) => sum + (i.product.normalPrice - i.product.webPrice) * i.quantity,
-    0
-  );
-  const offerDiscount = items.reduce(
-    (sum, i) => sum + ((i.product.webPrice ?? 0) - (i.product.offerPrice ?? 0)) * i.quantity,
-    0
-  );
-  const totalSaved = webDiscount + offerDiscount;
-  const total = items.reduce((sum, i) => sum + getEffectivePrice(i.product) * i.quantity, 0);
-  const finalTotal = total + shippingCost;
+  // Obtener cantidad de items
+  const getItemCount = (): number => {
+    return items.reduce((count, item) => count + item.quantity, 0);
+  };
 
-  return (
-    <CartContext.Provider
-      value={{
-        items,
-        addItem,
-        removeItem,
-        updateQuantity,
-        clearCart,
-        totalItems,
-        subtotal,
-        webDiscount,
-        offerDiscount,
-        totalSaved,
-        total,
-        shippingCost,
-        finalTotal,
-        setShippingCost,
-      }}
-    >
-      {children}
-    </CartContext.Provider>
-  );
+  const value = {
+    items,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    clearCart,
+    getTotal,
+    getItemCount,
+  };
+
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+};
+
+export const useCart = (): CartContextType => {
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error('useCart debe usarse dentro de un CartProvider');
+  }
+  return context;
 };

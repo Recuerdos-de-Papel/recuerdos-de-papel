@@ -1,57 +1,45 @@
-import { supabase } from '../lib/supabase';
+import { apiClient } from '../api/client';
 import { Favorite } from '../types';
 
-export const getFavorites = async (userId: string) => {
-  const { data, error } = await supabase
-    .from('favorites')
-    .select(`
-      *,
-      product:products(*)
-    `)
-    .eq('userId', userId);
-
-  if (error) throw error;
-  return data as Favorite[];
+// Obtener favoritos del usuario
+export const getFavorites = async (): Promise<Favorite[]> => {
+  try {
+    const response = await apiClient.get('/favorites');
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener favoritos:', error);
+    throw error;
+  }
 };
 
-export const addToFavorites = async (userId: string, productId: string) => {
-  const { data, error } = await supabase
-    .from('favorites')
-    .insert([{ userId, productId }])
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as Favorite;
+// Agregar producto a favoritos
+export const addToFavorites = async (productId: string): Promise<Favorite> => {
+  try {
+    const response = await apiClient.post<Favorite>('/favorites', { productId });
+    return response.data;
+  } catch (error) {
+    console.error('Error al agregar a favoritos:', error);
+    throw error;
+  }
 };
 
-export const removeFromFavorites = async (id: string) => {
-  const { error } = await supabase
-    .from('favorites')
-    .delete()
-    .eq('id', id);
-
-  if (error) throw error;
+// Eliminar producto de favoritos
+export const removeFromFavorites = async (productId: string): Promise<void> => {
+  try {
+    await apiClient.delete(`/favorites/${productId}`);
+  } catch (error) {
+    console.error('Error al eliminar de favoritos:', error);
+    throw error;
+  }
 };
 
-export const isFavorite = async (userId: string, productId: string) => {
-  const { data, error } = await supabase
-    .from('favorites')
-    .select('id')
-    .eq('userId', userId)
-    .eq('productId', productId)
-    .single();
-
-  if (error) return false;
-  return !!data;
-};
-
-export const removeFavoriteByProduct = async (userId: string, productId: string) => {
-  const { error } = await supabase
-    .from('favorites')
-    .delete()
-    .eq('userId', userId)
-    .eq('productId', productId);
-
-  if (error) throw error;
+// Verificar si un producto está en favoritos
+export const isFavorite = async (productId: string): Promise<boolean> => {
+  try {
+    const response = await apiClient.get(`/favorites/${productId}`);
+    return response.data.isFavorite;
+  } catch (error) {
+    console.error('Error al verificar favorito:', error);
+    return false;
+  }
 };

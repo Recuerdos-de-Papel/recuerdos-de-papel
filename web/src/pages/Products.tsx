@@ -1,152 +1,138 @@
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { getProducts } from '../services/productService';
-import type { Product } from '../types';
-import ProductCard from '../components/ProductCard';
-import ProductFilters from '../components/ProductFilters';
-import ProductPagination from '../components/ProductPagination';
+import React, { useEffect, useState } from 'react';
+import { getProducts, getCategories } from '../services/productService';
+import { Product, Category } from '../types';
 
-export default function Products() {
-  const [searchParams, setSearchParams] = useSearchParams();
+const Products: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const page = parseInt(searchParams.get('page') || '1', 10);
-  const search = searchParams.get('search') || '';
-  const category = searchParams.get('categoria') || '';
-  const family = searchParams.get('familia') || '';
-  const subfamily = searchParams.get('subfamilia') || '';
-  const validSortOptions = ['newest', 'price-asc', 'price-desc', 'name-asc'] as const;
-  const sortBy = validSortOptions.includes(searchParams.get('sort') as typeof validSortOptions[number]) 
-    ? searchParams.get('sort') as 'newest' | 'price-asc' | 'price-desc' | 'name-asc' 
-    : 'newest';
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadProducts = async () => {
-      setLoading(true);
-      setError(null);
+    const fetchData = async () => {
       try {
-        const result = await getProducts(page, 12, {
-          search,
-          category,
-          family,
-          subfamily,
-        });
-        setProducts(result.data);
-        setTotalPages(result.totalPages);
-        setTotal(result.total);
-      } catch (err) {
-        setError('Error al cargar los productos');
+        const [productsRes, categoriesRes] = await Promise.all([
+          getProducts({ isActive: true }),
+          getCategories(),
+        ]);
+        setProducts(productsRes.data);
+        setCategories(categoriesRes);
+      } catch (error) {
+        console.error('Error al cargar productos:', error);
       } finally {
-        setLoading(false);
+        setIsLoading(false);
       }
     };
-    loadProducts();
-  }, [page, search, category, family, subfamily, sortBy]);
 
-  const handleSearch = (searchTerm: string) => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set('search', searchTerm);
-    newParams.set('page', '1');
-    setSearchParams(newParams);
-  };
+    fetchData();
+  }, []);
 
-  const handleCategoryChange = (newCategory: string) => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set('categoria', newCategory);
-    newParams.delete('familia');
-    newParams.delete('subfamilia');
-    newParams.set('page', '1');
-    setSearchParams(newParams);
-  };
+  const filteredProducts = products.filter((product) => {
+    const matchesCategory = !selectedCategory || product.subfamilyId === selectedCategory;
+    const matchesSearch = !searchTerm || 
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesCategory && matchesSearch && product.isActive;
+  });
 
-  const handleFamilyChange = (newFamily: string) => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set('familia', newFamily);
-    newParams.delete('subfamilia');
-    newParams.set('page', '1');
-    setSearchParams(newParams);
-  };
-
-  const handleSubfamilyChange = (newSubfamily: string) => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set('subfamilia', newSubfamily);
-    newParams.set('page', '1');
-    setSearchParams(newParams);
-  };
-
-  const handleSortChange = (newSort: string) => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set('sort', newSort);
-    newParams.set('page', '1');
-    setSearchParams(newParams);
-  };
-
-  const handlePageChange = (newPage: number) => {
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set('page', newPage.toString());
-    setSearchParams(newParams);
-  };
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-xl text-gray-600">Cargando productos...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-8">
-          Nuestro Catálogo
-        </h1>
+        <h1 className="text-4xl font-bold text-center mb-8">Nuestros Productos</h1>
 
-        <ProductFilters
-          onSearch={handleSearch}
-          onCategoryChange={handleCategoryChange}
-          onFamilyChange={handleFamilyChange}
-          onSubfamilyChange={handleSubfamilyChange}
-          onSortChange={handleSortChange}
-          selectedCategory={category}
-          selectedFamily={family}
-          selectedSubfamily={subfamily}
-        />
+        {/* Filtros */}
+        <div className="mb-8 space-y-4">
+          <input
+            type="text"
+            placeholder="Buscar productos..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-600"
+          />
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-600"
+          >
+            <option value="">Todas las categorías</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </div>
 
-        {loading && (
+        {/* Grid de productos */}
+        {filteredProducts.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-xl text-gray-600">Cargando productos...</p>
+            <p className="text-gray-600 text-lg">No se encontraron productos</p>
           </div>
-        )}
-
-        {error && (
-          <div className="text-center py-12">
-            <p className="text-xl text-red-600">{error}</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {filteredProducts.map((product) => (
+              <div
+                key={product.id}
+                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition"
+              >
+                <div className="aspect-square bg-gray-200">
+                  {product.images && product.images.length > 0 ? (
+                    <img
+                      src={product.images[0]}
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                      Sin imagen
+                    </div>
+                  )}
+                </div>
+                <div className="p-4">
+                  <h3 className="font-semibold text-lg mb-2 line-clamp-2">{product.name}</h3>
+                  {product.description && (
+                    <p className="text-gray-600 text-sm mb-2 line-clamp-2">
+                      {product.description}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      {product.isOffer ? (
+                        <>
+                          <span className="text-lg font-bold text-pink-600">
+                            ${product.price.toFixed(2)}
+                          </span>
+                          <span className="text-sm text-gray-500 line-through ml-2">
+                            ${product.webPrice.toFixed(2)}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-lg font-bold text-gray-800">
+                          ${product.webPrice.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                    {product.stock === 0 && (
+                      <span className="text-red-600 text-sm">Sin stock</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-        )}
-
-        {!loading && !error && (
-          <>
-            <div className="mb-4 text-sm text-gray-600">
-              Mostrando {products.length} de {total} productos
-            </div>
-
-            {products.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {products.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-xl text-gray-600">No se encontraron productos</p>
-              </div>
-            )}
-
-            <ProductPagination
-              currentPage={page}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-            />
-          </>
         )}
       </div>
     </div>
   );
-}
+};
+
+export default Products;

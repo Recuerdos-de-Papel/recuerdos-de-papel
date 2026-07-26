@@ -1,112 +1,96 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '../lib/supabase';
-
-interface User {
-  id: string;
-  name: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  avatar?: string;
-}
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { apiClient, setAuthToken, setUser, getUser, logout as apiLogout, getAuthToken } from '../api/client';
+import { User, LoginRequest, RegisterRequest, AuthResponse } from '../types';
 
 interface AuthContextType {
   user: User | null;
-  login: (user: User) => void;
-  logout: () => void;
-  loginWithGoogle: () => Promise<void>;
   isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (credentials: LoginRequest) => Promise<void>;
+  register: (data: RegisterRequest) => Promise<void>;
+  logout: () => void;
+  updateUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUserState] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-
+  // Verificar si hay sesión activa al cargar
   useEffect(() => {
-    // Verificar sesión existente al cargar
-    const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        const supaUser = session.user;
-        const userData: User = {
-          id: supaUser.id,
-          name: supaUser.user_metadata?.full_name?.split(' ')[0] || '',
-          lastName: supaUser.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
-          email: supaUser.email || '',
-          phone: supaUser.user_metadata?.phone,
-          avatar: supaUser.user_metadata?.avatar_url,
-        };
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
+    const checkAuth = async () => {
+      const token = getAuthToken();
+      const savedUser = getUser();
+      
+      if (token && savedUser) {
+        setUserState(savedUser);
       }
+      
+      setIsLoading(false);
     };
 
-    getInitialSession();
-
-    // Escuchar cambios de autenticación de Supabase
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        const supaUser = session.user;
-        const userData: User = {
-          id: supaUser.id,
-          name: supaUser.user_metadata?.full_name?.split(' ')[0] || '',
-          lastName: supaUser.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
-          email: supaUser.email || '',
-          phone: supaUser.user_metadata?.phone,
-          avatar: supaUser.user_metadata?.avatar_url,
-        };
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
-      } else {
-        setUser(null);
-        localStorage.removeItem('user');
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    checkAuth();
   }, []);
 
-  const login = (userData: User) => {
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
+  const login = async (credentials: LoginRequest) => {
+    try {
+      const response = await apiClient.post<AuthResponse>('/auth/login', credentials);
+      const { token, user } = response.data;
+      
+      // Guardar token y usuario
+      setAuthToken(token);
+      setUser(user);
+      setUserState(user);
+    } catch (error) {
+      console.error('Error en login:', error);
+      throw error;
+    }
   };
 
-  const loginWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/mi-cuenta`,
-      },
-    });
-    if (error) throw error;
+  const register = async (data: RegisterRequest) => {
+    try {
+      const response = await apiClient.post<AuthResponse>('/auth/register', data);
+      const { token, user } = response.data;
+      
+      // Guardar token y usuario
+      setAuthToken(token);
+      setUser(user);
+      setUserState(user);
+    } catch (error) {
+      console.error('Error en registro:', error);
+      throw error;
+    }
   };
 
-  const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    localStorage.removeItem('user');
+  const logout = () => {
+    apiLogout();
+    setUserState(null);
   };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        login,
-        logout,
-        loginWithGoogle,
-        isAuthenticated: !!user,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+    setUserState(updatedUser);
+  };
+
+  const value = {
+    user,
+    isAuthenticated: !!user,
+    isLoading,
+    login,
+    register,
+    logout,
+    updateUser,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth debe usarse dentro de un AuthProvider');
+  }
+  return context;
 };

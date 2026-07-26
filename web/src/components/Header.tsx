@@ -1,256 +1,124 @@
-import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { ShoppingCartIcon, Bars3Icon, XMarkIcon, UserIcon } from '@heroicons/react/24/outline';
-import { useState, useEffect } from 'react';
-import { getCategories } from '../services/productService';
-import { useCart } from '../context/CartContext';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useSettings } from '../context/SettingsContext';
-import type { Category } from '../types';
+import { useCart } from '../context/CartContext';
 
-export default function Header() {
+const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [openCategory, setOpenCategory] = useState<string | null>(null);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const { totalItems } = useCart();
-  const { user, logout, isAuthenticated } = useAuth();
-  const { logo, businessName } = useSettings();
+  const { user, isAuthenticated, logout } = useAuth();
+  const { getItemCount } = useCart();
   const navigate = useNavigate();
+  const itemCount = getItemCount();
 
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const data = await getCategories();
-        setCategories(data);
-      } catch (error) {
-        // Error handled silently
-      }
-    };
-    loadCategories();
-  }, []);
-
-  const navItems = [
-    { name: 'Inicio', path: '/' },
-    { name: 'Promociones', path: '/promociones' },
-    { name: 'Nosotros', path: '/nosotros' },
-    { name: 'Contacto', path: '/contacto' },
-  ];
-
-  const handleAuthClick = () => {
-    if (isAuthenticated) {
-      navigate('/mi-cuenta');
-    } else {
-      navigate('/login');
-    }
-  };
-
-  const handleLogout = async () => {
-    await logout();
+  const handleLogout = () => {
+    logout();
     navigate('/');
   };
 
-  const displayName = businessName || 'RECUERDOS DE PAPEL';
-
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo - desde settingsService */}
-          <Link to="/" className="flex items-center gap-3">
-            {logo ? (
-              <img
-                src={logo}
-                alt={displayName}
-                className="h-10 w-auto object-contain"
-              />
-            ) : (
-              <span className="text-2xl font-bold text-primary-600">{displayName}</span>
-            )}
-            {!logo && (
-              <span className="text-sm text-gray-500">Papelería Creativa</span>
-            )}
+          {/* Logo */}
+          <Link to="/" className="flex items-center space-x-2">
+            <div className="text-2xl font-bold text-pink-600">
+              Recuerdos de Papel
+            </div>
           </Link>
 
-          {/* Desktop Menu */}
-          <div className="hidden md:flex space-x-8">
-            {/* Menú desplegable de categorías */}
-            <div 
-              className="relative"
-              onMouseEnter={() => setOpenCategory('all')}
-              onMouseLeave={() => setOpenCategory(null)}
-            >
-              <NavLink
-                to="/productos"
-                className={({ isActive }) =>
-                  `text-gray-700 hover:text-primary-600 transition-colors font-medium ${
-                    isActive ? 'text-primary-600' : ''
-                  }`
-                }
-              >
-                Productos
-              </NavLink>
-              
-              {/* Dropdown de categorías */}
-              {openCategory && (
-                <div className="absolute left-0 mt-2 w-64 bg-white rounded-lg shadow-lg py-2 z-50">
-                  {categories.map((cat) => (
-                    <div key={cat.id} className="relative group">
-                      <Link
-                        to={`/productos?categoria=${cat.id}`}
-                        className="flex items-center px-4 py-2 text-gray-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
-                      >
-                        {cat.name}
-                      </Link>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  `text-gray-700 hover:text-primary-600 transition-colors font-medium ${
-                    isActive ? 'text-primary-600' : ''
-                  }`
-                }
-              >
-                {item.name}
-              </NavLink>
-            ))}
-          </div>
-
-          {/* Cart and Auth Buttons */}
-          <div className="flex items-center gap-2">
-            <Link
-              to="/carrito"
-              className="relative p-2 text-gray-700 hover:text-primary-600 transition-colors"
-            >
-              <ShoppingCartIcon className="h-6 w-6" />
-              {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {totalItems}
-                </span>
-              )}
+          {/* Navegación Desktop */}
+          <nav className="hidden md:flex space-x-8">
+            <Link to="/" className="text-gray-700 hover:text-pink-600 transition">
+              Inicio
             </Link>
+            <Link to="/products" className="text-gray-700 hover:text-pink-600 transition">
+              Productos
+            </Link>
+            <Link to="/categories" className="text-gray-700 hover:text-pink-600 transition">
+              Categorías
+            </Link>
+            <Link to="/contact" className="text-gray-700 hover:text-pink-600 transition">
+              Contacto
+            </Link>
+          </nav>
 
-            {isAuthenticated ? (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleAuthClick}
-                  className="flex items-center gap-2 p-2 text-gray-700 hover:text-primary-600 transition-colors"
-                >
-                  {user?.avatar ? (
-                    <img
-                      src={user.avatar}
-                      alt={user.name}
-                      className="w-6 h-6 rounded-full"
-                    />
-                  ) : (
-                    <UserIcon className="h-6 w-6" />
-                  )}
-                  <span className="text-sm font-medium">{user?.name || 'Cuenta'}</span>
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="p-2 text-red-600 hover:text-red-700 transition-colors"
-                >
-                  Salir
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={handleAuthClick}
-                className="p-2 text-gray-700 hover:text-primary-600 transition-colors"
-              >
-                <UserIcon className="h-6 w-6" />
-              </button>
-            )}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2 text-gray-700"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
-          </button>
-        </div>
-
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden pb-4 space-y-2">
-            {/* Productos con acordeón en móvil */}
-            <div>
-              <button
-                onClick={() => setOpenCategory(openCategory === 'mobile-products' ? null : 'mobile-products')}
-                className="w-full text-left py-2 text-gray-700 font-medium"
-              >
-                Productos
-              </button>
-              
-              {openCategory === 'mobile-products' && (
-                <div className="pl-4 space-y-2">
-                  {categories.map((cat) => (
-                    <div key={cat.id}>
-                      <div className="font-medium text-gray-600 py-1">{cat.name}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) =>
-                  `block py-2 text-gray-700 hover:text-primary-600 transition-colors ${
-                    isActive ? 'text-primary-600' : ''
-                  }`
-                }
-                onClick={() => setIsMenuOpen(false)}
-              >
-                {item.name}
-              </NavLink>
-            ))}
-
+          {/* Iconos de usuario y carrito */}
+          <div className="hidden md:flex items-center space-x-4">
             {isAuthenticated ? (
               <>
-                <button
-                  onClick={() => {
-                    navigate('/mi-cuenta');
-                    setIsMenuOpen(false);
-                  }}
-                  className="block w-full text-left py-2 text-gray-700 hover:text-primary-600 transition-colors"
-                >
-                  Mi Cuenta
-                </button>
-                <button
-                  onClick={() => {
-                    handleLogout();
-                    setIsMenuOpen(false);
-                  }}
-                  className="block w-full text-left py-2 text-red-600 hover:text-red-700 transition-colors"
-                >
+                <Link to="/profile" className="text-gray-700 hover:text-pink-600 transition">
+                  {user?.name}
+                </Link>
+                <button onClick={handleLogout} className="text-gray-700 hover:text-pink-600 transition">
                   Cerrar Sesión
                 </button>
               </>
             ) : (
-              <button
-                onClick={() => {
-                  navigate('/login');
-                  setIsMenuOpen(false);
-                }}
-                className="block w-full text-left py-2 text-gray-700 hover:text-primary-600 transition-colors"
-              >
+              <Link to="/login" className="text-gray-700 hover:text-pink-600 transition">
                 Iniciar Sesión
-              </button>
+              </Link>
             )}
+            
+            <Link to="/cart" className="relative text-gray-700 hover:text-pink-600 transition">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              {itemCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-pink-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {itemCount}
+                </span>
+              )}
+            </Link>
+          </div>
+
+          {/* Botón menú móvil */}
+          <button
+            className="md:hidden text-gray-700"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Menú móvil */}
+        {isMenuOpen && (
+          <div className="md:hidden py-4 space-y-2">
+            <Link to="/" className="block text-gray-700 hover:text-pink-600 transition">
+              Inicio
+            </Link>
+            <Link to="/products" className="block text-gray-700 hover:text-pink-600 transition">
+              Productos
+            </Link>
+            <Link to="/categories" className="block text-gray-700 hover:text-pink-600 transition">
+              Categorías
+            </Link>
+            <Link to="/contact" className="block text-gray-700 hover:text-pink-600 transition">
+              Contacto
+            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link to="/profile" className="block text-gray-700 hover:text-pink-600 transition">
+                  Mi Perfil
+                </Link>
+                <button onClick={handleLogout} className="block text-gray-700 hover:text-pink-600 transition">
+                  Cerrar Sesión
+                </button>
+              </>
+            ) : (
+              <Link to="/login" className="block text-gray-700 hover:text-pink-600 transition">
+                Iniciar Sesión
+              </Link>
+            )}
+            <Link to="/cart" className="block text-gray-700 hover:text-pink-600 transition">
+              Carrito ({itemCount})
+            </Link>
           </div>
         )}
-      </nav>
+      </div>
     </header>
   );
-}
+};
+
+export default Header;

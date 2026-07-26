@@ -1,92 +1,91 @@
-import { supabase } from '../lib/supabase';
-import { Order } from '../types';
+import { apiClient } from '../api/client';
+import { Order, Address, PaginatedResponse } from '../types';
 
-export const getOrders = async (userId: string) => {
-  const { data, error } = await supabase
-    .from('orders')
-    .select(`
-      *,
-      items:order_items(
-        *,
-        product:products(*)
-      )
-    `)
-    .eq('userId', userId)
-    .order('createdAt', { ascending: false });
-
-  if (error) throw error;
-  return data as Order[];
-};
-
-export const getOrderById = async (id: string, userId?: string) => {
-  let query = supabase
-    .from('orders')
-    .select(`
-      *,
-      items:order_items(
-        *,
-        product:products(*)
-      )
-    `)
-    .eq('id', id);
-
-  if (userId) {
-    query = query.eq('userId', userId);
+// Obtener pedidos del usuario
+export const getOrders = async (params?: {
+  page?: number;
+  limit?: number;
+  status?: string;
+}): Promise<PaginatedResponse<Order>> => {
+  try {
+    const response = await apiClient.get('/orders', { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener pedidos:', error);
+    throw error;
   }
-
-  const { data, error } = await query.single();
-
-  if (error) throw error;
-  return data as Order;
 };
 
-export const createOrder = async (order: Omit<Order, 'id' | 'createdAt' | 'updatedAt' | 'items'>, items: { productId: string; quantity: number; price: number }[]) => {
-  const { data, error } = await supabase
-    .from('orders')
-    .insert([{ ...order, userId: order.userId }])
-    .select()
-    .single();
-
-  if (error) throw error;
-
-    const orderId = data.id;
-    const orderItems = items.map(item => ({ ...item, orderId: orderId }));
-
-  const { error: itemsError } = await supabase
-    .from('order_items')
-    .insert(orderItems);
-
-  if (itemsError) throw itemsError;
-
-  return data as Order;
+// Obtener pedido por ID
+export const getOrderById = async (id: string): Promise<Order> => {
+  try {
+    const response = await apiClient.get(`/orders/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener pedido:', error);
+    throw error;
+  }
 };
 
-export const updateOrder = async (id: string, updates: Partial<Order>) => {
-  const { data, error } = await supabase
-    .from('orders')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data as Order;
+// Crear pedido
+export const createOrder = async (orderData: {
+  deliveryMethod: string;
+  address?: string;
+  notes?: string;
+  items: Array<{
+    productId: string;
+    quantity: number;
+    price: number;
+  }>;
+}): Promise<Order> => {
+  try {
+    const response = await apiClient.post<Order>('/orders', orderData);
+    return response.data;
+  } catch (error) {
+    console.error('Error al crear pedido:', error);
+    throw error;
+  }
 };
 
-export const deleteOrder = async (id: string) => {
-  const { error } = await supabase
-    .from('orders')
-    .delete()
-    .eq('id', id);
-
-  if (error) throw error;
+// Obtener direcciones del usuario
+export const getAddresses = async (): Promise<Address[]> => {
+  try {
+    const response = await apiClient.get('/addresses');
+    return response.data;
+  } catch (error) {
+    console.error('Error al obtener direcciones:', error);
+    throw error;
+  }
 };
 
-export const cancelOrder = async (id: string) => {
-  const { error } = await supabase
-    .from('orders')
-    .update({ status: 'cancelled' })
-    .eq('id', id);
+// Crear dirección
+export const createAddress = async (addressData: Partial<Address>): Promise<Address> => {
+  try {
+    const response = await apiClient.post<Address>('/addresses', addressData);
+    return response.data;
+  } catch (error) {
+    console.error('Error al crear dirección:', error);
+    throw error;
+  }
+};
 
-  if (error) throw error;
+// Actualizar dirección
+export const updateAddress = async (id: string, addressData: Partial<Address>): Promise<Address> => {
+  try {
+    const response = await apiClient.put<Address>(`/addresses/${id}`, addressData);
+    return response.data;
+  } catch (error) {
+    console.error('Error al actualizar dirección:', error);
+    throw error;
+  }
+};
+
+// Eliminar dirección
+export const deleteAddress = async (id: string): Promise<void> => {
+  try {
+    await apiClient.delete(`/addresses/${id}`);
+  } catch (error) {
+    console.error('Error al eliminar dirección:', error);
+    throw error;
+  }
 };
