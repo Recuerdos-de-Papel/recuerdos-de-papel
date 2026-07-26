@@ -17,6 +17,38 @@ if (supabaseUrl && supabaseServiceKey) {
   });
 }
 
+// Auto-create required storage buckets on startup
+const REQUIRED_BUCKETS = ['product-images', 'flyers'];
+
+const ensureBucketsExist = async () => {
+  if (!supabaseAdmin) return;
+
+  try {
+    const { data: existingBuckets } = await supabaseAdmin.storage.listBuckets();
+    const existingNames = existingBuckets?.map((b: any) => b.name) || [];
+
+    for (const bucket of REQUIRED_BUCKETS) {
+      if (!existingNames.includes(bucket)) {
+        const { error } = await supabaseAdmin.storage.createBucket(bucket, {
+          public: true,
+        });
+        if (error) {
+          console.error(`Error creating bucket "${bucket}":`, error.message);
+        } else {
+          console.log(`Bucket "${bucket}" created successfully`);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error ensuring buckets exist:', error);
+  }
+};
+
+// Initialize buckets when the module loads
+if (supabaseAdmin) {
+  ensureBucketsExist();
+}
+
 /**
  * Upload a file to Supabase Storage
  * @param bucket - The storage bucket name (e.g., 'product-images')
