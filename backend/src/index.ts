@@ -39,7 +39,15 @@ const adminLimiter = rateLimit({
 
 // Middleware
 app.use(helmet());
-app.use(cors({ origin: env.CORS_ORIGIN }));
+const allowedOrigins = env.CORS_ORIGIN.split(',').map(o => o.trim());
+app.use(cors({
+  origin: (origin, callback) => {
+    // Permitir requests sin origin (como curl, Postman, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(null, false);
+  }
+}));
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
