@@ -14,19 +14,20 @@ import {
   PaymentMethod,
 } from '../types';
 
-if (!env.MERCADO_PAGO_ACCESS_TOKEN) {
-  throw new Error('MERCADO_PAGO_ACCESS_TOKEN es requerido');
+let client: MercadoPagoConfig | null = null;
+let preferenceClient: Preference | null = null;
+let paymentClient: Payment | null = null;
+
+if (env.MERCADO_PAGO_ACCESS_TOKEN) {
+  client = new MercadoPagoConfig({
+    accessToken: env.MERCADO_PAGO_ACCESS_TOKEN,
+  });
+  preferenceClient = new Preference(client);
+  paymentClient = new Payment(client);
 }
 
-const client = new MercadoPagoConfig({
-  accessToken: env.MERCADO_PAGO_ACCESS_TOKEN,
-});
-
-const preferenceClient = new Preference(client);
-const paymentClient = new Payment(client);
-
 if (env.NODE_ENV === 'production' && !env.MERCADO_PAGO_WEBHOOK_SECRET) {
-  throw new Error('MERCADO_PAGO_WEBHOOK_SECRET es requerido en producción');
+  console.warn('MERCADO_PAGO_WEBHOOK_SECRET no está configurado en producción');
 }
 
 export class MercadoPagoService {
@@ -47,6 +48,10 @@ export class MercadoPagoService {
   }
 
   static async createPreference(data: CreatePreferenceDto): Promise<MercadoPagoPreference> {
+    if (!preferenceClient) {
+      throw new Error('MercadoPago no está configurado. Faltan las credenciales de acceso.');
+    }
+
     const order = await getOrderById(data.orderId);
 
     if (order.paymentId && order.paymentStatus === 'approved') {
@@ -91,6 +96,10 @@ export class MercadoPagoService {
   }
 
   static async getPaymentStatus(paymentId: string): Promise<PaymentResponse> {
+    if (!paymentClient) {
+      throw new Error('MercadoPago no está configurado. Faltan las credenciales de acceso.');
+    }
+
     const payment = await paymentClient.get({ id: paymentId });
 
     return {
@@ -310,6 +319,10 @@ export class MercadoPagoService {
   }
 
   static async refundPayment(paymentId: string, amount?: number): Promise<RefundResponse> {
+    if (!paymentClient) {
+      throw new Error('MercadoPago no está configurado. Faltan las credenciales de acceso.');
+    }
+
     const payment = await paymentClient.get({ id: paymentId });
 
     if (!payment.id) {
