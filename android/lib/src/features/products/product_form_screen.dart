@@ -108,11 +108,6 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
           final response = await apiClient.dio.post(
   '/upload/product-images',
   data: formData,
-  options: Options(
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  ),
 );
 
           if (response.data['urls'] != null) {
