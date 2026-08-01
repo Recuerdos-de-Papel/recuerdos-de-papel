@@ -106,7 +106,7 @@ class _ProductFormScreenState extends ConsumerState<ProductFormScreen> {
           });
 
           final response = await apiClient.dio.post(
-  '/api/admin/upload/product-images',
+  '/upload/product-images',
   data: formData,
   options: Options(
     headers: {
