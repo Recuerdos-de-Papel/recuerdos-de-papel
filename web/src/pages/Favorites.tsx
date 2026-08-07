@@ -2,12 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getFavorites } from '../services/favoriteService';
-import { getProductById } from '../services/productService';
-import { Favorite, Product } from '../types';
+import { Favorite } from '../types';
 
 const Favorites: React.FC = () => {
   const [favorites, setFavorites] = useState<Favorite[]>([]);
-  const [productsMap, setProductsMap] = useState<Map<string, Product>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const { isAuthenticated } = useAuth();
 
@@ -21,18 +19,6 @@ const Favorites: React.FC = () => {
       try {
         const favoritesRes = await getFavorites();
         setFavorites(favoritesRes);
-
-        // Cargar detalles de cada producto
-        const productMap = new Map<string, Product>();
-        for (const fav of favoritesRes) {
-          try {
-            const product = await getProductById(fav.productId);
-            productMap.set(fav.productId, product);
-          } catch (error) {
-            console.error(`Error al cargar producto ${fav.productId}:`, error);
-          }
-        }
-        setProductsMap(productMap);
       } catch (error) {
         console.error('Error al cargar favoritos:', error);
       } finally {
@@ -80,7 +66,7 @@ const Favorites: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {favorites.map((favorite) => {
-              const product = productsMap.get(favorite.productId);
+              const product = favorite.product;
               if (!product) return null;
 
               return (

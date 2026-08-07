@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { updateProfile } from '../services/authService';
 
 const Profile: React.FC = () => {
   const [name, setName] = useState('');
@@ -31,12 +32,9 @@ const Profile: React.FC = () => {
     setMessage('');
 
     try {
-      // Aquí iría la llamada a la API para actualizar el perfil
-      // Por ahora solo actualizamos el contexto local
-      if (user) {
-        updateUser({ ...user, name, email, phone });
-        setMessage('Perfil actualizado correctamente');
-      }
+      const updatedUser = await updateProfile({ name, email, phone });
+      updateUser(updatedUser);
+      setMessage('Perfil actualizado correctamente');
     } catch (error) {
       setMessage('Error al actualizar el perfil');
     } finally {

@@ -33,3 +33,14 @@ export const getProfile = async (): Promise<User> => {
     throw error;
   }
 };
+
+// Actualizar perfil
+export const updateProfile = async (data: { name: string; email: string; phone?: string }): Promise<User> => {
+  try {
+    const response = await apiClient.put<User>('/auth/profile', data);
+    return response.data;
+  } catch (error) {
+    console.error('Error al actualizar perfil:', error);
+    throw error;
+  }
+};

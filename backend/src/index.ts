@@ -22,42 +22,41 @@ dotenv.config();
 
 const app = express();
 
-// Rate Limiting - General
 const limiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minuto
-  max: 60, // 60 requests por minuto
+  windowMs: 60 * 1000,
+  max: 60,
   message: { error: 'Demasiadas solicitudes, intente más tarde' },
 });
 app.use(limiter);
 
-// Admin API rate limit - más permisivo
 const adminLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minuto
-  max: 120, // 120 requests por minuto
+  windowMs: 60 * 1000,
+  max: 120,
   message: { error: 'Demasiadas solicitudes, intente más tarde' },
 });
 
-// Middleware
 app.use(helmet());
 const allowedOrigins = env.CORS_ORIGIN.split(',').map(o => o.trim());
 app.use(cors({
   origin: (origin, callback) => {
-    // Permitir requests sin origin (como curl, Postman, etc.)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
     return callback(null, false);
   }
 }));
 app.use(morgan('dev'));
-app.use(express.json());
+
+app.use(express.json({
+  verify: (req: any, _res, buf) => {
+    req.rawBody = buf;
+  },
+}));
 app.use(express.urlencoded({ extended: true }));
 
-// Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Swagger/OpenAPI Documentation
 const swaggerDocument = {
   openapi: '3.0.0',
   info: {
@@ -67,8 +66,8 @@ const swaggerDocument = {
   },
   servers: [
     {
-      url: `http://localhost:${env.PORT}`,
-      description: 'Servidor de desarrollo',
+      url: `${env.BACKEND_URL}`,
+      description: 'Servidor de producción',
     },
   ],
   paths: {
@@ -248,25 +247,18 @@ const swaggerDocument = {
 
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/payments', MercadoPagoRoutes);
 app.use('/api/admin', adminLimiter, adminRoutes);
-
-// Public routes (web)
 app.use('/api', publicRoutes);
-
-// Authenticated routes (client)
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/addresses', addressRoutes);
 
-// 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });
 });
 
-// Error handler
 app.use(errorHandler);
 
 const startServer = async () => {
@@ -276,8 +268,8 @@ const startServer = async () => {
     app.listen(env.PORT, () => {
       logger.info(`Servidor corriendo en puerto ${env.PORT}`);
       logger.info(`Ambiente: ${env.NODE_ENV}`);
-      logger.info(`Health check: http://localhost:${env.PORT}/health`);
-      logger.info(`API Docs: http://localhost:${env.PORT}/api/docs`);
+      logger.info(`Health check: ${env.BACKEND_URL}/health`);
+      logger.info(`API Docs: ${env.BACKEND_URL}/api/docs`);
     });
   } catch (error) {
     logger.error('Error al iniciar el servidor:', error);

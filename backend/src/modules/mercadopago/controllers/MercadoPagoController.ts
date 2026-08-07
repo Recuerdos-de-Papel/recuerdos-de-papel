@@ -75,7 +75,7 @@ export class MercadoPagoController {
             };
 
             // Find order by external_reference
-            const orders = await MercadoPagoService['findOrderByPaymentId'](String(paymentId));
+            const orders = await MercadoPagoService.findOrderByPaymentId(String(paymentId));
             
             if (orders && orders.length > 0) {
               const order = orders[0];
@@ -127,7 +127,7 @@ export class MercadoPagoController {
       const payment = await MercadoPagoService.getPaymentStatus(paymentId);
 
       // Update order if needed
-      const orders = await MercadoPagoService['findOrderByPaymentId'](paymentId);
+      const orders = await MercadoPagoService.findOrderByPaymentId(paymentId);
       if (orders && orders.length > 0) {
         const order = orders[0];
         const updateData: {

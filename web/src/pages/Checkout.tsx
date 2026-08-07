@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { createOrder } from '../services/orderService';
 import { createPaymentPreference } from '../services/paymentService';
 
 const Checkout: React.FC = () => {
@@ -43,20 +44,33 @@ const Checkout: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Crear preferencia de pago en Mercado Pago
-      const preference = await createPaymentPreference({
-        orderId: 'temp-' + Date.now(),
+      const total = getTotal();
+      
+      // 1. Crear la orden real en la base de datos
+      const order = await createOrder({
+        deliveryMethod,
+        customerName,
+        customerPhone,
+        customerEmail,
+        subtotal: total,
+        total,
+        discount: 0,
+        shippingCost: 0,
+        address: deliveryMethod !== 'pickup' ? address : undefined,
+        notes,
         items: items.map(item => ({
           productId: item.product.id,
           quantity: item.quantity,
           price: item.product.isOffer ? item.product.price : item.product.webPrice,
-          name: item.product.name,
         })),
-        total: getTotal(),
-        customerEmail,
       });
 
-      // Redirigir a Mercado Pago
+      // 2. Crear preferencia de pago en Mercado Pago con la orden real
+      const preference = await createPaymentPreference({
+        orderId: order.id,
+      });
+
+      // 3. Redirigir a Mercado Pago
       window.location.href = preference.initPoint;
     } catch (error) {
       setError('Error al procesar el pago. Por favor, intente nuevamente.');

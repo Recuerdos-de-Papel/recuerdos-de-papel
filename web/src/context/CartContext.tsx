@@ -60,7 +60,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Calcular total
   const getTotal = (): number => {
     return items.reduce((total, item) => {
-      const price = item.product.isOffer ? item.product.price : item.product.webPrice;
+      const price = item.product.webPrice;
       return total + price * item.quantity;
     }, 0);
   };

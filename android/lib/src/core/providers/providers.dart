@@ -180,7 +180,7 @@ class Product {
   final bool isActive;
   final int stock;
   final double? cost;
-  final int order;
+  final int displayOrder;
   
   Product({
     required this.id,
@@ -196,7 +196,7 @@ class Product {
     this.isActive = true,
     this.stock = 0,
     this.cost,
-    this.order = 0,
+    this.displayOrder = 0,
   });
   
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -218,7 +218,7 @@ class Product {
       isActive: json['isActive'] ?? true,
       stock: json['stock'] ?? 0,
       cost: json['cost'] != null ? (json['cost'] as num).toDouble() : null,
-      order: json['order'] ?? 0,
+      displayOrder: json['displayOrder'] ?? 0,
     );
   }
 }

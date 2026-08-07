@@ -252,3 +252,12 @@ model AdminLog {
 
   @@map("admin_logs")
 }
+
+model PaymentIdempotency {
+  id         String   @id @default(uuid())
+  paymentId  String   @unique
+  orderId    String
+  processedAt DateTime @default(now())
+
+  @@map("payment_idempotencies")
+}

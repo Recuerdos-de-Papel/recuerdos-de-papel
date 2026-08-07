@@ -1,7 +1,11 @@
 import axios, { AxiosInstance, AxiosError, AxiosResponse } from 'axios';
 
 // Configuración de la API
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+if (!API_BASE_URL) {
+  throw new Error('VITE_API_URL no está definida');
+}
 
 // Crear instancia de Axios
 export const apiClient: AxiosInstance = axios.create({
@@ -15,7 +19,7 @@ export const apiClient: AxiosInstance = axios.create({
 // Interceptor para agregar token JWT
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth_token');
+    const token = getAuthToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

@@ -126,6 +126,7 @@ export interface Favorite {
   id: string;
   userId: string;
   productId: string;
+  product?: Product;
 }
 
 // Usuario

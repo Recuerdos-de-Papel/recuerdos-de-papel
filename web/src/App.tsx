@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import Header from './components/Header';
@@ -16,6 +16,9 @@ import Categories from './pages/Categories';
 import Favorites from './pages/Favorites';
 import Orders from './pages/Orders';
 import Contact from './pages/Contact';
+import PaymentSuccess from './pages/PaymentSuccess';
+import PaymentPending from './pages/PaymentPending';
+import PaymentFailure from './pages/PaymentFailure';
 
 const App: React.FC = () => {
   return (
@@ -38,6 +41,10 @@ const App: React.FC = () => {
                 <Route path="/favorites" element={<Favorites />} />
                 <Route path="/orders" element={<Orders />} />
                 <Route path="/contact" element={<Contact />} />
+                <Route path="/pago-exitoso" element={<PaymentSuccess />} />
+                <Route path="/pago-pendiente" element={<PaymentPending />} />
+                <Route path="/pago-rechazado" element={<PaymentFailure />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </main>
             <Footer />

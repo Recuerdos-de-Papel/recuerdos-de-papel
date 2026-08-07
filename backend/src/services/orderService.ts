@@ -35,6 +35,8 @@ const mapPrismaOrderToOrder = (prismaOrder: any): Order => ({
     productId: item.productId,
     quantity: item.quantity,
     price: item.price,
+    productName: item.product?.name || '',
+    productCode: item.product?.code || undefined,
     createdAt: item.createdAt,
   })),
   createdAt: prismaOrder.createdAt,
@@ -44,9 +46,18 @@ const mapPrismaOrderToOrder = (prismaOrder: any): Order => ({
 export const getOrders = async (userId: string): Promise<Order[]> => {
   const orders = await prisma.order.findMany({
     where: { userId },
-    include: {
-      items: true,
+  include: {
+    items: {
+      include: {
+        product: {
+          select: {
+            name: true,
+            code: true,
+          },
+        },
+      },
     },
+  },
     orderBy: { createdAt: 'desc' },
   });
 
@@ -57,7 +68,16 @@ export const getOrderById = async (id: string, userId?: string): Promise<Order> 
   const order = await prisma.order.findFirst({
     where: userId ? { id, userId } : { id },
     include: {
-      items: true,
+      items: {
+        include: {
+          product: {
+            select: {
+              name: true,
+              code: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -80,7 +100,16 @@ export const createOrder = async (
       },
     },
     include: {
-      items: true,
+      items: {
+        include: {
+          product: {
+            select: {
+              name: true,
+              code: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -92,7 +121,16 @@ export const updateOrder = async (id: string, updates: UpdateOrderDto): Promise<
     where: { id },
     data: updates,
     include: {
-      items: true,
+      items: {
+        include: {
+          product: {
+            select: {
+              name: true,
+              code: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -120,7 +158,16 @@ export const cancelOrder = async (id: string): Promise<Order> => {
       cancelledAt: new Date(),
     },
     include: {
-      items: true,
+      items: {
+        include: {
+          product: {
+            select: {
+              name: true,
+              code: true,
+            },
+          },
+        },
+      },
     },
   });
 

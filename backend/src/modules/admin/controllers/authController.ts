@@ -29,7 +29,10 @@ export const loginController = async (req: Request, res: Response, next: NextFun
     }
 
     // Generate JWT token
-    const jwtSecret = env.JWT_SECRET || 'default-secret';
+    if (!env.JWT_SECRET) {
+      throw new Error('JWT_SECRET no está definido en las variables de entorno');
+    }
+    const jwtSecret = env.JWT_SECRET;
     const jwtExpiresIn = env.JWT_EXPIRES_IN && env.JWT_EXPIRES_IN.trim() !== '' 
       ? env.JWT_EXPIRES_IN 
       : '7d';
@@ -85,6 +88,32 @@ export const profileController = async (req: Request, res: Response, next: NextF
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
+
+    res.json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// PUT /api/admin/auth/profile - Actualizar perfil del administrador
+export const updateProfileController = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name, email, phone } = req.body;
+
+    const user = await prisma.user.update({
+      where: { id: req.user!.id },
+      data: {
+        name,
+        email,
+        phone,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+      },
+    });
 
     res.json(user);
   } catch (error) {

@@ -1,5 +1,6 @@
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
 import { env } from '../../../config/env';
+import { prisma } from '../../../config/prisma';
 import {
   getOrderById,
   updateOrder,
@@ -13,17 +14,37 @@ import {
   PaymentMethod,
 } from '../types';
 
+if (!env.MERCADO_PAGO_ACCESS_TOKEN) {
+  throw new Error('MERCADO_PAGO_ACCESS_TOKEN es requerido');
+}
+
 const client = new MercadoPagoConfig({
-  accessToken: env.MERCADO_PAGO_ACCESS_TOKEN || '',
+  accessToken: env.MERCADO_PAGO_ACCESS_TOKEN,
 });
 
 const preferenceClient = new Preference(client);
 const paymentClient = new Payment(client);
 
-const MP_WEBHOOK_SECRET = env.MERCADO_PAGO_WEBHOOK_SECRET || '';
+if (env.NODE_ENV === 'production' && !env.MERCADO_PAGO_WEBHOOK_SECRET) {
+  throw new Error('MERCADO_PAGO_WEBHOOK_SECRET es requerido en producción');
+}
 
 export class MercadoPagoService {
-  private static processedPayments = new Set<string>();
+  private static async isPaymentProcessed(paymentId: string): Promise<boolean> {
+    const existing = await prisma.paymentIdempotency.findUnique({
+      where: { paymentId },
+    });
+    return existing !== null;
+  }
+
+  private static async markPaymentAsProcessed(paymentId: string, orderId: string): Promise<void> {
+    await prisma.paymentIdempotency.create({
+      data: {
+        paymentId,
+        orderId,
+      },
+    });
+  }
 
   static async createPreference(data: CreatePreferenceDto): Promise<MercadoPagoPreference> {
     const order = await getOrderById(data.orderId);
@@ -40,17 +61,18 @@ export class MercadoPagoService {
       currency_id: 'ARS',
     }));
 
-    const baseUrl = env.CORS_ORIGIN || 'http://localhost:5173';
+    const frontendUrl = env.CORS_ORIGIN;
+    const backendUrl = env.BACKEND_URL;
 
     const preference = await preferenceClient.create({
       body: {
         items,
         external_reference: order.id,
-        notification_url: `${baseUrl}/api/payments/webhook`,
+        notification_url: `${backendUrl}/api/payments/webhook`,
         back_urls: {
-          success: `${baseUrl}/pago-exitoso`,
-          pending: `${baseUrl}/pago-pendiente`,
-          failure: `${baseUrl}/pago-rechazado`,
+          success: `${frontendUrl}/pago-exitoso`,
+          pending: `${frontendUrl}/pago-pendiente`,
+          failure: `${frontendUrl}/pago-rechazado`,
         },
         auto_return: 'approved',
       },
@@ -87,11 +109,9 @@ export class MercadoPagoService {
     paymentMethod: PaymentMethod,
     dateApproved: string | null
   ): Promise<void> {
-    if (MercadoPagoService.processedPayments.has(paymentId)) {
+    if (await MercadoPagoService.isPaymentProcessed(paymentId)) {
       return;
     }
-
-    MercadoPagoService.processedPayments.add(paymentId);
 
     const orders = await MercadoPagoService.findOrderByPaymentId(paymentId);
     
@@ -126,7 +146,52 @@ export class MercadoPagoService {
       updateData.dateApproved = new Date(dateApproved);
     }
 
-    await updateOrder(order.id, updateData);
+    if (status === 'approved') {
+      await prisma.$transaction(async (tx) => {
+        const orderWithItems = await tx.order.findUnique({
+          where: { id: order.id },
+          include: {
+            items: true,
+          },
+        });
+
+        if (!orderWithItems) {
+          throw new Error('Pedido no encontrado');
+        }
+
+        for (const item of orderWithItems.items) {
+          const product = await tx.product.findUnique({
+            where: { id: item.productId },
+          });
+
+          if (!product) {
+            throw new Error(`Producto ${item.productId} no encontrado}`);
+          }
+
+          if (product.stock < item.quantity) {
+            throw new Error(`Stock insuficiente para ${product.name}`);
+          }
+
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              stock: {
+                decrement: item.quantity,
+              },
+            },
+          });
+        }
+
+        await tx.order.update({
+          where: { id: order.id },
+          data: updateData,
+        });
+      });
+    } else {
+      await updateOrder(order.id, updateData);
+    }
+
+    await MercadoPagoService.markPaymentAsProcessed(paymentId, order.id);
   }
 
   static async processMerchantOrder(merchantOrderId: string): Promise<void> {
@@ -160,7 +225,7 @@ export class MercadoPagoService {
 
     const order = await getOrderById(externalReference);
 
-    if (order.paymentId && MercadoPagoService.processedPayments.has(order.paymentId)) {
+    if (order.paymentId && await MercadoPagoService.isPaymentProcessed(order.paymentId)) {
       return;
     }
 
@@ -169,11 +234,9 @@ export class MercadoPagoService {
       const payment = payments[0];
       const paymentId = String(payment.id || '');
 
-      if (MercadoPagoService.processedPayments.has(paymentId)) {
+      if (await MercadoPagoService.isPaymentProcessed(paymentId)) {
         return;
       }
-
-      MercadoPagoService.processedPayments.add(paymentId);
 
       const updateData: {
         paymentId: string;
@@ -197,7 +260,52 @@ export class MercadoPagoService {
         updateData.paymentMethod = payment.payment_method_id;
       }
 
-      await updateOrder(order.id, updateData);
+      if (payment.status === 'approved') {
+        await prisma.$transaction(async (tx) => {
+          const orderWithItems = await tx.order.findUnique({
+            where: { id: order.id },
+            include: {
+              items: true,
+            },
+          });
+
+          if (!orderWithItems) {
+            throw new Error('Pedido no encontrado');
+          }
+
+          for (const item of orderWithItems.items) {
+            const product = await tx.product.findUnique({
+              where: { id: item.productId },
+            });
+
+            if (!product) {
+              throw new Error(`Producto ${item.productId} no encontrado}`);
+            }
+
+            if (product.stock < item.quantity) {
+              throw new Error(`Stock insuficiente para ${product.name}`);
+            }
+
+            await tx.product.update({
+              where: { id: item.productId },
+              data: {
+                stock: {
+                  decrement: item.quantity,
+                },
+              },
+            });
+          }
+
+          await tx.order.update({
+            where: { id: order.id },
+            data: updateData,
+          });
+        });
+      } else {
+        await updateOrder(order.id, updateData);
+      }
+
+      await MercadoPagoService.markPaymentAsProcessed(paymentId, order.id);
     }
   }
 
@@ -208,7 +316,6 @@ export class MercadoPagoService {
       throw new Error(`Pago ${paymentId} no encontrado`);
     }
 
-    // Use fetch for refund since mercadopago SDK may not have refund method
     const refundResponse = await fetch(
       `https://api.mercadopago.com/payments/${paymentId}/refunds`,
       {
@@ -241,20 +348,20 @@ export class MercadoPagoService {
   }
 
   static async validateWebhookSignature(signature: string, data: string): Promise<boolean> {
-    if (!MP_WEBHOOK_SECRET) {
-      return true;
+    if (!env.MERCADO_PAGO_WEBHOOK_SECRET) {
+      return false;
     }
 
     const crypto = await import('crypto');
     const expectedSignature = crypto
-      .createHmac('sha256', MP_WEBHOOK_SECRET)
+      .createHmac('sha256', env.MERCADO_PAGO_WEBHOOK_SECRET)
       .update(data)
       .digest('hex');
 
     return signature === expectedSignature;
   }
 
-  private static async findOrderByPaymentId(paymentId: string): Promise<any[]> {
+  public static async findOrderByPaymentId(paymentId: string): Promise<any[]> {
     const { prisma } = await import('../../../modules/admin/services');
 
     return prisma.order.findMany({

@@ -30,6 +30,13 @@ export const getOrderById = async (id: string): Promise<Order> => {
 // Crear pedido
 export const createOrder = async (orderData: {
   deliveryMethod: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
+  subtotal: number;
+  total: number;
+  discount?: number;
+  shippingCost?: number;
   address?: string;
   notes?: string;
   items: Array<{

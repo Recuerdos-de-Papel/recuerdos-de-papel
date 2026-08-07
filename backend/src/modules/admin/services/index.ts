@@ -1,4 +1,3 @@
-import { PrismaClient } from '@prisma/client';
 import {
   Product,
   Category,
@@ -31,63 +30,7 @@ import {
   UpdateSettingDto,
 } from '../dto';
 
-// Singleton PrismaClient with PgBouncer support
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
-
-/**
- * Transforms a Supabase pooler URL to a direct connection URL.
- * Pooler format: postgresql://postgres.PROJECT_REF:PASS@aws-0-REGION.pooler.supabase.com:6543/DB
- * Direct format: postgresql://postgres:PASS@db.PROJECT_REF.supabase.co:5432/DB
- */
-const poolerToDirectUrl = (poolerUrl: string): string | null => {
-  try {
-    // Only transform if it's a Supabase pooler URL
-    if (!poolerUrl.includes('.pooler.supabase.com') || !poolerUrl.includes('@')) {
-      return null;
-    }
-
-    // Extract components from pooler URL
-    // Format: postgresql://postgres.PROJECT_REF:PASS@HOST:PORT/DB
-    const match = poolerUrl.match(/^postgresql:\/\/postgres\.([^.]+):([^@]+)@[^:]+:\d+\/(.+)$/);
-    if (!match) return null;
-
-    const projectRef = match[1]; // e.g., kdktpojkuztruiyqlqlr
-    const password = match[2]; // e.g., Bruno-0508202
-    const database = match[3].split('?')[0]; // Remove query params
-
-    // Build direct URL (using port 5432, not pooler port 6543)
-    const directUrl = `postgresql://postgres:${password}@db.${projectRef}.supabase.co:5432/${database}`;
-    console.log(`Auto-generated DIRECT_URL: postgresql://postgres:***@db.${projectRef}.supabase.co:5432/${database}`);
-    return directUrl;
-  } catch (e) {
-    console.error('Error generating DIRECT_URL:', e);
-    return null;
-  }
-};
-
-const createPrismaClient = () => {
-  const databaseUrl = process.env.DATABASE_URL || '';
-
-  // Usar DATABASE_URL directamente con Supabase Pooler (puerto 6543).
-  // No se genera DIRECT_URL porque el puerto 5432 es inaccesible desde esta red.
-  // Se agrega pgbouncer=true para compatibilidad con PgBouncer.
-  let runtimeUrl = databaseUrl;
-  if (databaseUrl && !runtimeUrl.includes('pgbouncer=')) {
-    runtimeUrl += (runtimeUrl.includes('?') ? '&' : '?') + 'pgbouncer=true';
-  }
-
-  return new PrismaClient({
-    datasources: {
-      db: { url: runtimeUrl },
-    },
-    log: ['error', 'warn'],
-  });
-};
-
-const prisma = globalForPrisma.prisma ?? createPrismaClient();
-globalForPrisma.prisma = prisma;
+import { prisma } from '../../../config/prisma';
 
 // Export prisma for reuse across modules
 export { prisma };

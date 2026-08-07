@@ -3,15 +3,7 @@ import { apiClient } from '../api/client';
 // Crear preferencia de pago en Mercado Pago
 export const createPaymentPreference = async (orderData: {
   orderId: string;
-  items: Array<{
-    productId: string;
-    quantity: number;
-    price: number;
-    name: string;
-  }>;
-  total: number;
-  customerEmail: string;
-}): Promise<{ preferenceId: string; initPoint: string }> => {
+}): Promise<{ preferenceId: string; initPoint: string; sandbox_init_point?: string }> => {
   try {
     const response = await apiClient.post('/payments/create-preference', orderData);
     return response.data;
